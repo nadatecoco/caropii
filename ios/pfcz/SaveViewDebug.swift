@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 struct SaveViewDebug: View {
     @EnvironmentObject var foodStore: FoodStore
@@ -22,35 +23,51 @@ struct SaveViewDebug: View {
                 .cornerRadius(10)
             }
             
-            // P/F/C表示（テキスト形式）
-            HStack(spacing: 20) {
-                VStack {
-                    Text("P")
-                        .font(.caption)
-                        .foregroundColor(.red)
+            // P/F/C横棒グラフ
+            Chart {
+                BarMark(
+                    x: .value("Amount", foodEntryStore.todayTotalProtein),
+                    y: .value("Nutrient", "Protein")
+                )
+                .foregroundStyle(.red.opacity(0.8))
+                .cornerRadius(4)
+                .annotation(position: .trailing) {
                     Text("\(foodEntryStore.todayTotalProtein, specifier: "%.1f")g")
-                        .font(.headline)
-                }
-                
-                VStack {
-                    Text("F")
                         .font(.caption)
-                        .foregroundColor(.orange)
+                        .foregroundColor(.primary)
+                }
+
+                BarMark(
+                    x: .value("Amount", foodEntryStore.todayTotalFat),
+                    y: .value("Nutrient", "Fat")
+                )
+                .foregroundStyle(.orange.opacity(0.8))
+                .cornerRadius(4)
+                .annotation(position: .trailing) {
                     Text("\(foodEntryStore.todayTotalFat, specifier: "%.1f")g")
-                        .font(.headline)
-                }
-                
-                VStack {
-                    Text("C")
                         .font(.caption)
-                        .foregroundColor(.green)
+                        .foregroundColor(.primary)
+                }
+
+                BarMark(
+                    x: .value("Amount", foodEntryStore.todayTotalCarbs),
+                    y: .value("Nutrient", "Carb")
+                )
+                .foregroundStyle(.green.opacity(0.8))
+                .cornerRadius(4)
+                .annotation(position: .trailing) {
                     Text("\(foodEntryStore.todayTotalCarbs, specifier: "%.1f")g")
-                        .font(.headline)
+                        .font(.caption)
+                        .foregroundColor(.primary)
                 }
             }
-            .padding()
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(10)
+            .frame(height: 150)
+            .chartLegend(.hidden)
+            .chartXAxis(.hidden)
+            .chartYAxis(.hidden)
+            .chartPlotStyle { plotArea in
+                plotArea.background(.clear)
+            }
             
             // 食事記録リスト
             VStack(alignment: .leading) {
