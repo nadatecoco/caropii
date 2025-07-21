@@ -15,7 +15,7 @@ struct pfczApp: App {
     var body: some Scene {
         WindowGroup {
             NavigationView {
-                ContentView()
+                HomeView()
                     .environmentObject(foodStore)
                     .environmentObject(foodEntryStore)
             }

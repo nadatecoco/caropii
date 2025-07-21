@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4174B9DE2E2E76BE00804595 /* .gitattributes in Resources */ = {isa = PBXBuildFile; fileRef = 4174B9D12E2E76BE00804595 /* .gitattributes */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		4174B8B82E1CECA000804595 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,7 @@
 		4174B8AA2E1CECA000804595 /* pfcz.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pfcz.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4174B8B72E1CECA000804595 /* pfczTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = pfczTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4174B8C12E1CECA000804595 /* pfczUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = pfczUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4174B9D12E2E76BE00804595 /* .gitattributes */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitattributes; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +80,7 @@
 		4174B8A12E1CECA000804595 = {
 			isa = PBXGroup;
 			children = (
+				4174B9D12E2E76BE00804595 /* .gitattributes */,
 				4174B8AC2E1CECA000804595 /* pfcz */,
 				4174B8BA2E1CECA000804595 /* pfczTests */,
 				4174B8C42E1CECA000804595 /* pfczUITests */,
@@ -212,6 +218,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4174B9DE2E2E76BE00804595 /* .gitattributes in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
