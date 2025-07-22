@@ -157,11 +157,11 @@ struct SaveViewDebug: View {
         .padding()
         .navigationTitle("食事記録")
         .navigationBarTitleDisplayMode(.inline)
-        // .sheet(isPresented: $showingAnalysisResult) {
-        //     if let result = analysisResult {
-        //         AnalysisResultView(analysisText: result)
-        //     }
-        // }
+        .sheet(isPresented: $showingAnalysisResult) {
+            if let result = analysisResult {
+                AnalysisResultView(analysisText: result)
+            }
+        }
     }
     
     private func sendTodayDataAndAnalyze() {
