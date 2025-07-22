@@ -125,11 +125,18 @@ struct SaveViewDebug: View {
                     sendTodayDataAndAnalyze()
                 }) {
                     HStack {
-                        Image(systemName: "brain.head.profile")
-                            .font(.title2)
-                        Text("AI分析する")
-                            .font(.headline)
-                            .fontWeight(.semibold)
+                        if isAnalyzing {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .foregroundColor(.white)
+                            Text("AI分析中...")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                        } else {
+                            Text("AI分析する")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -138,17 +145,6 @@ struct SaveViewDebug: View {
                     .cornerRadius(12)
                 }
                 .disabled(foodEntryStore.todayEntries.isEmpty)
-                
-                if isAnalyzing {
-                    HStack {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("AI分析中...")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                    }
-                    .padding(.top, 5)
-                }
             }
             .padding(.horizontal)
             

@@ -3,6 +3,7 @@ import SwiftUI
 struct FoodDatabaseView: View {
     @EnvironmentObject var foodStore: FoodStore
     @State private var expandedFoodId: UUID?
+    @State private var showingAddFoodSheet = false
     
     var body: some View {
         VStack {
@@ -76,6 +77,19 @@ struct FoodDatabaseView: View {
         }
         .navigationTitle("食材データベース")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    showingAddFoodSheet = true
+                }) {
+                    Image(systemName: "plus")
+                        .font(.title2)
+                }
+            }
+        }
+        .sheet(isPresented: $showingAddFoodSheet) {
+            AddFoodView()
+        }
     }
 }
 

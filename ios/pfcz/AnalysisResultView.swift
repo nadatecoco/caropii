@@ -10,10 +10,6 @@ struct AnalysisResultView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     // ヘッダー
                     VStack(spacing: 10) {
-                        Image(systemName: "brain.head.profile")
-                            .font(.system(size: 50))
-                            .foregroundColor(.purple)
-                        
                         Text("AI 栄養分析結果")
                             .font(.title2)
                             .fontWeight(.bold)
