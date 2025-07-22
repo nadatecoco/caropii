@@ -8,6 +8,7 @@ Rails.application.routes.draw do
   # API routes
   resources :food_entries, only: [:create]
   get 'food_entries/today', to: 'food_entries#today'
+  post 'food_entries/analyze_nutrition', to: 'food_entries#analyze_nutrition'
 
   # Defines the root path route ("/")
   # root "posts#index"
