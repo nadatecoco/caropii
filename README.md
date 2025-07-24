@@ -1,234 +1,136 @@
-# 🍽️ PFCZ（仮）
+# 🍽️ caropii
 
 ## 📌 このアプリについて
 
-本アプリは、日々の**食事記録**を効率的に行い、その情報を活用して**AIからの助言**を受けられる健康管理サポートアプリです。  
-具体的には、ユーザーが登録した食材や食事の内容を元に、ChatGPTと連携し、「摂取バランスはどうか」「追加で何を食べるべきか」「今の食生活に偏りはあるか」といったアドバイスをもらえる設計を目指しています。  
-現時点では食事記録とアドバイスの連携を主な機能とし、今後は睡眠などの他の健康データも統合していく予定です。
+**caropii**は、日々の食事記録を効率的に行い、AIによる栄養分析アドバイスを受けられる健康管理アプリです。
+
+現在の主な機能：
+- 食材選択による簡単な食事記録
+- PFC（タンパク質・脂質・炭水化物）とカロリーの可視化
+- 今日の栄養摂取状況をグラフで表示
+- AI（Gemini）による栄養バランス分析とアドバイス
 
 ---
 
-## ✍️ 作った背景
+## 🧩 現在の技術スタック
 
-人間は日々、筋トレ・食事・睡眠など、健康に関わるデータを記録していることも多いですが、それらは「記録するだけ」で終わってしまい、十分に活用されていないことが多いと感じていました。  
-せっかく手間をかけて記録しているのであれば、**AIにそのデータを活かしてもらい、日々の生活の質向上につなげることができるのではないか**と考えました。
-
-実際、ChatGPTのようなAIを活用すれば、「昨日の睡眠に応じたトレーニング強度」や「最近の食生活から見た栄養バランス」など、体調に応じたアドバイスを受け取ることが可能です。  
-ただし、そのたびに毎回データを入力し直すのは**非常に面倒**です。これが、AIの活用を日常に取り入れるうえでの大きな障壁になっていると感じました。
-
-そこで注目したのが、**過去の情報をもとに生成結果を補強できる「RAG」**という技術です。  
-この仕組みを取り入れれば、**一度記録しておいたデータをAIが自動的に参照してくれるため、毎回情報を渡す手間が省け、より自然な形でアドバイスを受け取ることが可能になります。**
-
-このアプリでは、まずは「日々の食事記録」と「AIによる助言の自動化」を軸に、そうした体験を実現する第一歩として開発を進めています。
-
----
-
-## 🧩 使用技術
-
-| 目的           | 使用技術                  |
+| 機能           | 使用技術                  |
 |----------------|---------------------------|
-| フロントエンド | SwiftUI（iOS）            |
+| iOSアプリ      | SwiftUI                   |
 | グラフ描画     | Swift Charts              |
-| バックエンド   | Ruby on Rails（予定）     |
-| DB管理         | PostgreSQL + pgvector（予定） |
-| AI連携         | OpenAI API（予定）        |
+| データ保存     | UserDefaults（ローカル）   |
+| バックエンド   | Ruby on Rails 8.0.2      |
+| データベース   | SQLite                    |
+| AI分析         | Google Gemini API         |
+| デプロイ       | Render                    |
 
 ---
 
-## 🔮 将来的な機能構想
+## 📱 現在の機能
 
-- ✅ 音声入力で食材追加  
-- ✅ カレンダーで日付ごとの記録表示  
-- ✅ 栄養バランスに基づいたGPTの助言  
-- ✅ 食事傾向の分析とグラフ化  
-- ✅ Apple Watchなどとの連携（睡眠・活動データ）  
-- ✅ 継続日数の表示やリマインダー通知    
-- ✅ オフライン保存やスマホ内データ処理の最適化
----
-## 📱 画面遷移図（テキスト形式）
-[ホーム画面]
-├─▶ [保存画面]
-│       ├─▶ 入力内容をLLMに送信（音声・テキスト）
-│       ├─▶ 推定された食材の確認（チェック方式）
-│       ├─▶ チェックOK：記録 → DB保存前確認 → 保存
-│       └─▶ チェックNG：ユーザーが手動で成分入力 → DB保存前確認 → 保存
-└─▶ [食材データベース画面]
-├─▶ 保存された食材一覧
-└─▶ 栄養情報を詳細表示（栄養成分は詳細ボタンで展開）
+### ✅ 実装済み
+- **食事記録**: 8種類の基本食材から選択して記録
+- **栄養可視化**: PFCの横棒グラフ表示
+- **今日の合計**: カロリー・栄養素の合計値表示
+- **記録削除**: タップで食事記録を削除
+- **AI分析**: 今日の食事データをGemini APIで分析してアドバイス取得
+- **バックエンド連携**: 食事データの送信とAI分析結果の取得
 
----
+### 🔄 データの流れ
 
-## 📄 各画面の概要と仕様
-
-### ◾️ ホーム画面
-- 「今日の記録をする」ボタン
-- 「食材データを管理」ボタン
-
-### ◾️ 保存画面
-- 入力形式：音声 or テキスト
-- 入力内容はLLMに渡され、食材候補と推定量（g）が返ってくる
-- DB未登録食材があった場合、チェック方式で確認
-- OKなら記録、NOならユーザーが成分入力（あとでDB登録するかも聞かれる）
-
-### ◾️ 食材データベース画面
-- 一覧表示
-- 食材名（例：唐揚げ）+ 想定量（例：100g）
-- 詳細ボタンで栄養情報を展開表示（タンパク質・脂質・炭水化物）
-
----
-
-## 🧠 データ保存のルール
-
-- 基本は**スマホのローカルDB**
-- Railsサーバーには**一時的に同期**する（最大2日で削除）
-- 食材データの登録・更新は、**全てユーザー確認あり**
-- 同一食材の登録は一意な名前かラベルで判定（例：唐揚げ（冷食A）など）
-
----
-
-## 🛠 機能要件（ざっくり）
-
-- スマホで完結（Web表示不要）
-- ネット接続前提（LLM APIが必要なため）
-- 音声認識：スマホ内蔵機能を利用
-- 食材のデータ登録・削除はユーザー管理画面から
-- ChatGPT（or Claude）などのLLM APIを利用
-
----
-
-## 🏗️ アーキテクチャ構成（予定）
-
-```text
+```
 iOSアプリ（SwiftUI）
-        ↓
-バックエンドAPI（Rails）
-        ↓
-PostgreSQL + pgvector
-        ↓
-OpenAI GPT-4 API（RAG構成）
-        ↓
-iOSアプリにレスポンス
----
-
-## 📁 実装済み機能一覧
-
-- FlowLayout によるチップ複数行表示（3〜4行まで）  
-- ScrollViewで縦スクロール対応  
-- Chartに `.easeInOut` アニメーション追加  
-- `chartXScale(domain:)` によるグラフバーの左寄せ修正  
+    ├─ UserDefaults（ローカル保存）
+    └─ Rails API 
+        ├─ 食事データ送信 → SQLite保存
+        └─ AI分析リクエスト → Gemini API → 分析結果返却
+```
 
 ---
 
-## 🗒️ 補足
+## 🗂️ 現在のデータ構造
 
-- READMEは他の個人開発者のリポジトリも参考にしつつ改善中  
-- GPTの活用方針は今後も検討・調整予定  
+### iOS側（UserDefaults）
+- **foods**: 固定8食材のマスターデータ
+- **food_entries**: 食事記録（日時・栄養素情報付き）
+
+### Rails側（SQLite）
+```sql
+-- 食材マスター
+CREATE TABLE foods (
+  name VARCHAR,
+  protein DECIMAL,
+  fat DECIMAL, 
+  carbs DECIMAL,
+  calories DECIMAL
+);
+
+-- 食事記録
+CREATE TABLE food_entries (
+  food_name VARCHAR,
+  protein DECIMAL,
+  fat DECIMAL,
+  carbs DECIMAL, 
+  calories DECIMAL,
+  consumed_at DATETIME
+);
+```
 
 ---
- テーブル設計
 
-  users
+## 📋 基本食材リスト（現在固定）
 
-  | Column             | Type   | Options                   |
-  |--------------------|--------|---------------------------|
-  | uuid               | uuid   | unique: true, null: false |
-  | app_user_id        | string | unique: true              |
-  | name               | string | null: false               |
-  | email              | string | null: false, unique: true |
-  | encrypted_password | string | null: false               |
-  | last_name          | string | null: false               |
-  | first_name         | string | null: false               |
-  | kana_last_name     | string | null: false               |
-  | kana_first_name    | string | null: false               |
-  | birthday           | date   | null: false               |
+1. 鶏胸肉(100g) - 108kcal
+2. 白米(150g) - 252kcal  
+3. 卵(1個) - 76kcal
+4. アボカド(1/2個) - 160kcal
+5. バナナ(1本) - 86kcal
+6. サーモン(100g) - 208kcal
+7. ブロッコリー(100g) - 25kcal
+8. オートミール(30g) - 114kcal
 
-  Association: has_many :analysis_sessions
+---
 
-  ---
-  analysis_sessions
+## 🔮 今後の改善構想
 
-  | Column          | Type       | Options                              |
-  |-----------------|------------|--------------------------------------|
-  | uuid            | uuid       | unique: true, null: false            |
-  | user            | references | null: false, foreign_key: true       |
-  | session_type    | string     | null: false (e.g. 'daily', 'weekly') |
-  | start_date      | date       | null: false                          |
-  | end_date        | date       | null: false                          |
-  | status          | string     | default: 'pending'                   |
-  | expires_at      | datetime   | null: false                          |
-  | analysis_result | json       |                                      |
+### 🚧 近い将来の実装予定
+- [ ] 食材の動的追加機能
+- [ ] 音声入力による食事記録
+- [ ] 過去データの表示・カレンダー機能
+- [ ] より詳細な栄養素表示（ビタミン・ミネラル等）
+- [ ] 食事記録の写真撮影機能
 
-  Association:
-  - belongs_to :user
-  - has_many :food_entries, dependent: :destroy
-  - has_many :sleep_records, dependent: :destroy
-  - has_many :exercise_records, dependent: :destroy
-  - has_many :health_metrics, dependent: :destroy
+### 🌟 長期的な構想
+- [ ] ユーザー認証システム
+- [ ] 睡眠・運動データとの連携
+- [ ] Apple Watch連携
+- [ ] RAG機能による過去データを活用したAI分析
+- [ ] PostgreSQL + pgvectorへの移行
 
-  ---
-  food_entries
+---
 
-  | Column           | Type       | Options                              |
-  |------------------|------------|--------------------------------------|
-  | uuid             | uuid       | unique: true, null: false            |
-  | analysis_session | references | null: false, foreign_key: true       |
-  | food_name        | string     | null: false                          |
-  | protein          | decimal    | precision: 6, scale: 2, null: false  |
-  | fat              | decimal    | precision: 6, scale: 2, null: false  |
-  | carbs            | decimal    | precision: 6, scale: 2, null: false  |
-  | calories         | decimal    | precision: 7, scale: 2, null: false  |
-  | quantity         | decimal    | precision: 5, scale: 2, default: 1.0 |
-  | consumed_at      | datetime   | null: false                          |
-  | meal_type        | string     | (e.g. 'breakfast', 'lunch', etc.)    |
+## 🛠 開発環境のセットアップ
 
-  Association: belongs_to :analysis_session
+### Rails バックエンド
+```bash
+cd backend
+bundle install
+rails db:create db:migrate
+rails server  # http://localhost:3000 で起動
+```
 
-  ---
-  sleep_records
+### iOS アプリ  
+```bash
+cd ios
+open pfcz.xcodeproj  # Xcodeで開く
+```
 
-  | Column           | Type       | Options                        |
-  |------------------|------------|--------------------------------|
-  | uuid             | uuid       | unique: true, null: false      |
-  | analysis_session | references | null: false, foreign_key: true |
-  | sleep_start      | datetime   | null: false                    |
-  | sleep_end        | datetime   | null: false                    |
-  | duration_minutes | integer    | null: false                    |
-  | quality_score    | integer    | (1〜10スケール)                     |
-  | sleep_stages     | json       | (deep/light/REMなどの構造化データ)      |
-  | recorded_date    | date       | null: false                    |
+---
 
-  Association: belongs_to :analysis_session
+## 📊 アプリの使い方
 
-  ---
-  exercise_records
-
-  | Column           | Type       | Options                        |
-  |------------------|------------|--------------------------------|
-  | uuid             | uuid       | unique: true, null: false      |
-  | analysis_session | references | null: false, foreign_key: true |
-  | exercise_type    | string     | null: false                    |
-  | duration_minutes | integer    | null: false                    |
-  | intensity        | string     |                                |
-  | calories_burned  | decimal    | precision: 6, scale: 2         |
-  | distance_km      | decimal    | precision: 6, scale: 2         |
-  | exercise_data    | json       | （心拍数やペースなど）                    |
-  | started_at       | datetime   | null: false                    |
-  | ended_at         | datetime   | null: false                    |
-
-  Association: belongs_to :analysis_session
-
-  ---
-  health_metrics
-
-  | Column           | Type       | Options                             |
-  |------------------|------------|-------------------------------------|
-  | uuid             | uuid       | unique: true, null: false           |
-  | analysis_session | references | null: false, foreign_key: true      |
-  | metric_type      | string     | null: false （例: 'weight'）           |
-  | value            | decimal    | precision: 8, scale: 2, null: false |
-  | unit             | string     | null: false （例: 'kg', '%'）          |
-  | measured_at      | datetime   | null: false                         |
-  | notes            | text       |                                     |
-
-  Association: belongs_to :analysis_session
+1. **食事記録**: ホーム画面で食材をタップして記録
+2. **グラフ確認**: PFCの摂取バランスを横棒グラフで確認
+3. **AI分析**: バックエンド経由でGeminiからの栄養アドバイスを取得
+4. **記録削除**: 記録した食事をタップして削除
 
