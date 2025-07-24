@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>caropii - 健康管理アプリ</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #4a90e2;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #4a90e2;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+        h3 {
+            color: #e74c3c;
+            margin-top: 25px;
+        }
+        .status {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #28a745;
+        }
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .tech-item {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .feature-list {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .future-plans {
+            background: #d1ecf1;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        .highlight {
+            background: #ffeb3b;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .demo-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍽️ caropii</h1>
+        <p style="text-align: center; font-size: 1.2em; color: #666;">AI活用型 健康管理アプリ</p>
+
+        <h2>📱 現在のアプリ状況</h2>
+        <div class="status">
+            <h3>✅ 実装済み機能</h3>
+            <ul>
+                <li><strong>食事記録システム</strong>：食材選択による簡単な食事記録</li>
+                <li><strong>栄養可視化</strong>：PFC（タンパク質・脂質・炭水化物）を横棒グラフで表示</li>
+                <li><strong>AI栄養分析</strong>：Google Gemini APIで今日の食事を分析してアドバイス</li>
+                <li><strong>Rails API連携</strong>：iOSアプリ ⇔ バックエンド間でデータ送受信</li>
+            </ul>
+        </div>
+
+        <h2>🛠 技術構成</h2>
+        <div class="tech-stack">
+            <div class="tech-item">
+                <strong>フロントエンド</strong><br>
+                SwiftUI (iOS)
+            </div>
+            <div class="tech-item">
+                <strong>バックエンド</strong><br>
+                Ruby on Rails 8.0
+            </div>
+            <div class="tech-item">
+                <strong>AI分析</strong><br>
+                Google Gemini API
+            </div>
+            <div class="tech-item">
+                <strong>データベース</strong><br>
+                SQLite
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>🎯 アプリの流れ</h3>
+            <p><strong>食材選択</strong> → <strong>栄養グラフ表示</strong> → <strong>AI分析依頼</strong> → <strong>改善アドバイス取得</strong></p>
+        </div>
+
+        <h2>🚀 今後追加予定の機能</h2>
+        
+        <div class="future-plans">
+            <h3>🎙️ 音声プロンプト入力</h3>
+            <ul>
+                <li>「今日は鮭おにぎり2個とサラダチキン食べました」みたいに<span class="highlight">自然言語</span>で記録</li>
+                <li>LLMが食材を自動識別・抽出</li>
+            </ul>
+        </div>
+
+        <div class="future-plans">
+            <h3>🤖 未知食材のAI栄養価算出</h3>
+            <ul>
+                <li>データベースにない食材もAIが栄養価を推定</li>
+                <li>ユーザー確認を経てデータベースに自動追加</li>
+            </ul>
+        </div>
+
+        <div class="future-plans">
+            <h3>🍎 Apple Watch連携</h3>
+            <ul>
+                <li><strong>睡眠データ</strong>：睡眠時間・質を自動取得</li>
+                <li><strong>ワークアウトデータ</strong>：心拍数・消費カロリー・運動時間</li>
+                <li><strong>3軸統合分析</strong>：睡眠 + 運動 + 食事で総合的な健康アドバイス</li>
+            </ul>
+        </div>
+
+        <h2>💭 開発で工夫したポイント</h2>
+        <div class="feature-list">
+            <ul>
+                <li><strong>シンプルなUX</strong>：タップだけで簡単に食事記録</li>
+                <li><strong>リアルタイム可視化</strong>：Swift Chartsで栄養バランスを即座にグラフ表示</li>
+                <li><strong>AI活用</strong>：単純な記録ではなく、実用的なアドバイスを提供</li>
+                <li><strong>実装優先</strong>：複雑な設計より、まず動くものを作成</li>
+            </ul>
+        </div>
+
+        <h2>🎯 最終的な目標</h2>
+        <p style="font-size: 1.1em; text-align: center; padding: 20px; background: #e8f5e8; border-radius: 10px;">
+            <strong>「記録するだけ」で終わらない健康管理アプリ</strong><br>
+            睡眠・運動・食事の3つのデータを統合し、<br>
+            AIが個人に最適化された健康アドバイスを提供する
+        </p>
+    </div>
+</body>
+</html>
