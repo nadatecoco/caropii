@@ -6,6 +6,28 @@ struct SleepDataView: View {
     @State private var isLoading = false
     private let healthStore = HKHealthStore()
     
+    // ダミーデータ
+    private let dummyData: [SleepDisplayRecord] = {
+        let calendar = Calendar.current
+        var data: [SleepDisplayRecord] = []
+        
+        for i in 0..<7 {
+            let baseDate = calendar.date(byAdding: .day, value: -i, to: Date())!
+            let bedTime = calendar.date(bySettingHour: 23, minute: 0, second: 0, of: baseDate)!
+            let wakeTime = calendar.date(byAdding: .hour, value: 8, to: bedTime)!
+            
+            data.append(SleepDisplayRecord(
+                id: "dummy-\(i)",
+                startTime: bedTime,
+                endTime: wakeTime,
+                sleepValue: 1,
+                dataSource: "ダミーデータ",
+                duration: 8.0
+            ))
+        }
+        return data
+    }()
+    
     var body: some View {
         VStack {
             // ヘッダー部分
@@ -39,7 +61,7 @@ struct SleepDataView: View {
             Divider()
             
             // データ一覧
-            if sleepRecords.isEmpty {
+            if sleepRecords.isEmpty && dummyData.isEmpty {
                 VStack(spacing: 20) {
                     Spacer()
                     Image(systemName: "moon.zzz")
@@ -55,6 +77,11 @@ struct SleepDataView: View {
                 }
             } else {
                 List {
+                    // ダミーデータを表示
+                    ForEach(dummyData, id: \.id) { record in
+                        SleepRecordRow(record: record)
+                    }
+                    // HealthKitデータを表示
                     ForEach(sleepRecords, id: \.id) { record in
                         SleepRecordRow(record: record)
                     }
