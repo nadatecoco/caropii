@@ -22,9 +22,7 @@ struct WorkoutSelectionView: View {
             // 選択ボタン
             VStack(spacing: 20) {
                 // 筋トレ記録ボタン
-                Button(action: {
-                    // TODO: 筋トレ記録画面に遷移
-                }) {
+                NavigationLink(destination: WorkoutRecordView()) {
                     HStack {
                         Image(systemName: "dumbbell.fill")
                             .font(.title2)
