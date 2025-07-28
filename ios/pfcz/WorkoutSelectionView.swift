@@ -40,9 +40,7 @@ struct WorkoutSelectionView: View {
                 }
                 
                 // 体測定記録ボタン
-                Button(action: {
-                    // TODO: 体測定記録画面に遷移
-                }) {
+                NavigationLink(destination: BodyMeasurementView()) {
                     HStack {
                         Image(systemName: "scalemass.fill")
                             .font(.title2)
