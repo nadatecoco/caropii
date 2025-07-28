@@ -174,8 +174,9 @@ struct SaveViewDebug: View {
                 switch result {
                 case .success:
                     break
-                case .failure:
+                case .failure(let error):
                     hasError = true
+                    print("食事データ送信エラー: \(error.localizedDescription)")
                 }
                 group.leave()
             }

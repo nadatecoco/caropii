@@ -42,9 +42,13 @@ class APIService {
                     return
                 }
                 
-                if let httpResponse = response as? HTTPURLResponse,
-                   httpResponse.statusCode == 201 {
-                    completion(.success(()))
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("HTTP Status Code: \(httpResponse.statusCode)")
+                    if httpResponse.statusCode == 201 {
+                        completion(.success(()))
+                    } else {
+                        completion(.failure(APIError.serverError))
+                    }
                 } else {
                     completion(.failure(APIError.serverError))
                 }
