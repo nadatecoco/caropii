@@ -77,6 +77,24 @@ struct HomeView: View {
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
+                
+                // 筋トレ記録ボタン
+                Button(action: {
+                    // TODO: 筋トレ記録画面に遷移
+                }) {
+                    HStack {
+                        Image(systemName: "dumbbell.fill")
+                            .font(.title2)
+                        Text("筋トレ記録")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.orange)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
             }
             
             Spacer()
