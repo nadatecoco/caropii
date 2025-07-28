@@ -1,19 +1,27 @@
-class HealthController < ApplicationController
-  def analyze
-    case params[:type]
-    when "nutrition"
-      result = analyze_nutrition
-    when "sleep"
-      result = analyze_sleep(params[:data])
-    else
-      result = { error: "無効なタイプです。'nutrition' または 'sleep' を指定してください。" }
-    end
-    
-    render json: result
+class HealthAnalyzer
+  def initialize
+    @client = Gemini.new(
+      credentials: {
+        service: 'generative-language-api',
+        api_key: ENV['GEMINI_API_KEY']
+      },
+      options: { model: 'gemini-1.5-flash', server_sent_events: true }
+    )
   end
 
-  private
+  # 統合分析メソッド（type指定）
+  def analyze(type, data = nil)
+    case type
+    when "nutrition"
+      analyze_nutrition
+    when "sleep"
+      analyze_sleep(data)
+    else
+      { error: "無効なタイプです。'nutrition' または 'sleep' を指定してください。" }
+    end
+  end
 
+  # 栄養分析（従来の機能）
   def analyze_nutrition
     # 今日の食事データを取得
     today_entries = FoodEntry.today
@@ -27,6 +35,7 @@ class HealthController < ApplicationController
     call_gemini_api(prompt)
   end
 
+  # 睡眠分析（新機能）
   def analyze_sleep(sleep_data)
     return { error: "睡眠データが提供されていません" } if sleep_data.blank?
 
@@ -37,18 +46,17 @@ class HealthController < ApplicationController
     call_gemini_api(prompt)
   end
 
+  # 従来のメソッド名も残す（互換性のため）
+  def analyze_today_nutrition
+    analyze_nutrition
+  end
+
+  private
+
   # 共通のGemini API呼び出し処理
   def call_gemini_api(prompt)
-    client = Gemini.new(
-      credentials: {
-        service: 'generative-language-api',
-        api_key: ENV['GEMINI_API_KEY']
-      },
-      options: { model: 'gemini-1.5-flash', server_sent_events: true }
-    )
-    
     begin
-      response = client.stream_generate_content({ contents: { parts: { text: prompt } } })
+      response = @client.stream_generate_content({ contents: { parts: { text: prompt } } })
       
       result = ""
       response.each do |chunk|

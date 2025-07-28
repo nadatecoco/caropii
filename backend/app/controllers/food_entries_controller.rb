@@ -18,7 +18,7 @@ class FoodEntriesController < ApplicationController
 
   # 栄養分析実行
   def analyze_nutrition
-    analyzer = NutritionAnalyzer.new
+    analyzer = HealthAnalyzer.new
     result = analyzer.analyze_today_nutrition
     
     if result[:error]

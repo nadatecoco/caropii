@@ -9,10 +9,7 @@ Rails.application.routes.draw do
   resources :food_entries, only: [:create]
   get 'food_entries/today', to: 'food_entries#today'
   
-  # 健康データ分析API（統合）
-  post 'health/analyze', to: 'health#analyze'
-  
-  # 旧API（互換性のため一時的に残す）
+  # 栄養分析API
   post 'food_entries/analyze_nutrition', to: 'food_entries#analyze_nutrition'
 
   # Defines the root path route ("/")
