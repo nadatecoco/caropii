@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ExerciseSelectionView: View {
+    @EnvironmentObject var dataManager: WorkoutDataManager
+    
     // デフォルトの種目リスト
     let defaultExercises = [
         "ベンチプレス",
@@ -15,7 +17,7 @@ struct ExerciseSelectionView: View {
     
     var body: some View {
         List(defaultExercises, id: \.self) { exercise in
-            NavigationLink(destination: ExerciseDetailView(exerciseName: exercise)) {
+            NavigationLink(destination: ExerciseDetailView(exerciseName: exercise).environmentObject(dataManager)) {
                 HStack {
                     Text(exercise)
                         .font(.headline)

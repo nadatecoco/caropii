@@ -9,11 +9,11 @@ struct WorkoutRecord: Identifiable {
 }
 
 struct WorkoutRecordView: View {
-    @State private var workoutRecords: [WorkoutRecord] = []
+    @StateObject private var dataManager = WorkoutDataManager()
     
     var body: some View {
         VStack {
-            if workoutRecords.isEmpty {
+            if dataManager.todayRecords.isEmpty {
                 // 記録がない場合
                 VStack(spacing: 20) {
                     Spacer()
@@ -29,7 +29,7 @@ struct WorkoutRecordView: View {
                 // 記録一覧表示
                 ScrollView {
                     VStack(spacing: 16) {
-                        ForEach(workoutRecords) { record in
+                        ForEach(dataManager.todayRecords) { record in
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(record.exerciseName)
                                     .font(.headline)
@@ -53,7 +53,7 @@ struct WorkoutRecordView: View {
             }
             
             // トレーニング追加ボタン
-            NavigationLink(destination: ExerciseSelectionView()) {
+            NavigationLink(destination: ExerciseSelectionView().environmentObject(dataManager)) {
                 Label("トレーニングを追加", systemImage: "plus.circle.fill")
                     .font(.headline)
                     .foregroundColor(.white)
@@ -68,11 +68,6 @@ struct WorkoutRecordView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
     
-    // TODO: ExerciseDetailViewから記録を受け取る処理
-    private func addWorkoutRecord(exerciseName: String, weight: String, sets: [String]) {
-        let newRecord = WorkoutRecord(exerciseName: exerciseName, weight: weight, sets: sets)
-        workoutRecords.append(newRecord)
-    }
 }
 
 #Preview {
