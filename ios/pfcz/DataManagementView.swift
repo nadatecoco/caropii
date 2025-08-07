@@ -14,7 +14,7 @@ struct DataManagementView: View {
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
-                Text("食材と睡眠データを管理")
+                Text("食材、睡眠、筋トレデータを管理")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -52,6 +52,22 @@ struct DataManagementView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.purple)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                
+                // 筋トレ種目管理
+                NavigationLink(destination: ExerciseManagementView()) {
+                    HStack {
+                        Image(systemName: "dumbbell.fill")
+                            .font(.title2)
+                        Text("筋トレ種目の管理")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.orange)
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }

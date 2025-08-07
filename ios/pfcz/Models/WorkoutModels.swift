@@ -20,7 +20,7 @@ struct SetRecord: Codable {
     var reps: Int
     var memo: String
     var isCompleted: Bool
-    var timestamp: Date? // セット完了時刻
+    var timestamp: Date? = nil // セット完了時刻（既存データ対応でOptional）
 }
 
 // MARK: - 保存管理用の拡張

@@ -2,21 +2,10 @@ import SwiftUI
 
 struct ExerciseSelectionView: View {
     @EnvironmentObject var dataManager: WorkoutDataManager
-    
-    // デフォルトの種目リスト
-    let defaultExercises = [
-        "ベンチプレス",
-        "スクワット",
-        "デッドリフト",
-        "ショルダープレス",
-        "ラットプルダウン",
-        "レッグプレス",
-        "ダンベルカール",
-        "トライセプスエクステンション"
-    ]
+    @State private var exercises: [String] = []
     
     var body: some View {
-        List(defaultExercises, id: \.self) { exercise in
+        List(exercises, id: \.self) { exercise in
             NavigationLink(destination: ExerciseDetailView(exerciseName: exercise).environmentObject(dataManager)) {
                 HStack {
                     Text(exercise)
@@ -30,6 +19,27 @@ struct ExerciseSelectionView: View {
         }
         .navigationTitle("種目を選択")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            loadExercises()
+        }
+    }
+    
+    private func loadExercises() {
+        if let savedExercises = UserDefaults.standard.stringArray(forKey: "customExercises") {
+            exercises = savedExercises
+        } else {
+            // デフォルト種目
+            exercises = [
+                "ベンチプレス",
+                "スクワット",
+                "デッドリフト",
+                "ショルダープレス",
+                "ラットプルダウン",
+                "レッグプレス",
+                "ダンベルカール",
+                "トライセプスエクステンション"
+            ]
+        }
     }
 }
 
