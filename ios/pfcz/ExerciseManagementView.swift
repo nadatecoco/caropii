@@ -146,19 +146,21 @@ struct ExerciseRow: View {
     var body: some View {
         ZStack(alignment: .trailing) {
             // 削除ボタン（背景）
-            HStack {
-                Spacer()
-                Button(action: onDelete) {
-                    VStack {
-                        Image(systemName: "trash")
-                            .foregroundColor(.white)
-                        Text("削除")
-                            .font(.caption)
-                            .foregroundColor(.white)
+            if showDeleteButton {
+                HStack {
+                    Spacer()
+                    Button(action: onDelete) {
+                        VStack {
+                            Image(systemName: "trash")
+                                .foregroundColor(.white)
+                            Text("削除")
+                                .font(.caption)
+                                .foregroundColor(.white)
+                        }
+                        .frame(width: 80)
                     }
-                    .frame(width: 80)
+                    .background(Color.red)
                 }
-                .background(Color.red)
             }
             
             // メインコンテンツ
@@ -180,7 +182,14 @@ struct ExerciseRow: View {
                         .font(.body)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
-                        .onTapGesture { onEdit() }
+                        .onTapGesture { 
+                            // タップ時にスワイプをリセット
+                            withAnimation {
+                                offset = 0
+                                showDeleteButton = false
+                            }
+                            onEdit() 
+                        }
                 }
             }
             .padding()
@@ -218,7 +227,9 @@ struct ExerciseDropDelegate: DropDelegate {
     @Binding var draggedItem: String?
     
     func performDrop(info: DropInfo) -> Bool {
-        draggedItem = nil
+        withAnimation {
+            draggedItem = nil
+        }
         return true
     }
     
