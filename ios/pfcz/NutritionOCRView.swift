@@ -23,6 +23,13 @@ struct NutritionOCRView: View {
         var productName: String?
     }
     
+    // 手動編集用の値
+    @State private var manualCalories: String = ""
+    @State private var manualProtein: String = ""
+    @State private var manualFat: String = ""
+    @State private var manualCarbs: String = ""
+    @State private var isManualEditMode = false
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
@@ -131,8 +138,29 @@ struct NutritionOCRView: View {
     @ViewBuilder
     private func recognitionResultView(nutrition: RecognizedNutrition) -> some View {
         VStack(alignment: .leading, spacing: 15) {
-            Text("認識結果")
-                .font(.headline)
+            HStack {
+                Text("認識結果")
+                    .font(.headline)
+                Spacer()
+                Button(action: {
+                    isManualEditMode.toggle()
+                    if isManualEditMode {
+                        // 編集モードに入る時、現在の値を文字列に変換
+                        manualCalories = nutrition.calories != nil ? String(format: "%.0f", nutrition.calories!) : ""
+                        manualProtein = nutrition.protein != nil ? String(format: "%.1f", nutrition.protein!) : ""
+                        manualFat = nutrition.fat != nil ? String(format: "%.1f", nutrition.fat!) : ""
+                        manualCarbs = nutrition.carbs != nil ? String(format: "%.1f", nutrition.carbs!) : ""
+                    }
+                }) {
+                    Text(isManualEditMode ? "完了" : "手動編集")
+                        .font(.caption)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(isManualEditMode ? Color.green : Color.gray.opacity(0.2))
+                        .foregroundColor(isManualEditMode ? .white : .primary)
+                        .cornerRadius(8)
+                }
+            }
             
             // 商品名入力フィールド
             HStack {
@@ -143,14 +171,30 @@ struct NutritionOCRView: View {
             }
             
             VStack(spacing: 10) {
-                nutritionRow(label: "エネルギー", value: nutrition.calories, unit: "kcal")
-                nutritionRow(label: "たんぱく質", value: nutrition.protein, unit: "g")
-                nutritionRow(label: "脂質", value: nutrition.fat, unit: "g")
-                nutritionRow(label: "炭水化物", value: nutrition.carbs, unit: "g")
+                if isManualEditMode {
+                    // 手動編集モード
+                    nutritionEditRow(label: "エネルギー", value: $manualCalories, unit: "kcal")
+                    nutritionEditRow(label: "たんぱく質", value: $manualProtein, unit: "g")
+                    nutritionEditRow(label: "脂質", value: $manualFat, unit: "g")
+                    nutritionEditRow(label: "炭水化物", value: $manualCarbs, unit: "g")
+                } else {
+                    // 表示モード
+                    nutritionRow(label: "エネルギー", value: nutrition.calories, unit: "kcal")
+                    nutritionRow(label: "たんぱく質", value: nutrition.protein, unit: "g")
+                    nutritionRow(label: "脂質", value: nutrition.fat, unit: "g")
+                    nutritionRow(label: "炭水化物", value: nutrition.carbs, unit: "g")
+                }
             }
             .padding()
             .background(Color.gray.opacity(0.1))
             .cornerRadius(10)
+            
+            if let error = errorMessage {
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(.orange)
+                    .padding(.horizontal)
+            }
             
             Button(action: {
                 saveToFoodEntry()
@@ -180,6 +224,25 @@ struct NutritionOCRView: View {
                 Text("--")
                     .foregroundColor(.gray)
             }
+        }
+    }
+    
+    // 編集可能な栄養成分行
+    private func nutritionEditRow(label: String, value: Binding<String>, unit: String) -> some View {
+        HStack {
+            Text(label)
+                .foregroundColor(.secondary)
+                .frame(width: 100, alignment: .leading)
+            
+            TextField("0", text: value)
+                .keyboardType(.decimalPad)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .frame(maxWidth: 100)
+            
+            Text(unit)
+                .foregroundColor(.secondary)
+            
+            Spacer()
         }
     }
     
@@ -249,39 +312,49 @@ struct NutritionOCRView: View {
         
         // 各テキスト行を解析
         for text in texts {
-            // エネルギー/カロリー
+            // エネルギー/カロリー/熱量など
             if let calories = extractValue(from: text, patterns: [
-                "エネルギー[\\s:]*([0-9.]+)\\s*kcal",
-                "カロリー[\\s:]*([0-9.]+)\\s*kcal",
-                "([0-9.]+)\\s*kcal"
+                "エネルギー[\\s:：]*([0-9.]+)\\s*kcal",
+                "カロリー[\\s:：]*([0-9.]+)\\s*kcal",
+                "熱量[\\s:：]*([0-9.]+)\\s*kcal",
+                "energy[\\s:：]*([0-9.]+)\\s*kcal",
+                "([0-9.]+)\\s*kcal",
+                "エネルギー量[\\s:：]*([0-9.]+)",
+                "([0-9.]+)\\s*キロカロリー"
             ]) {
                 nutrition.calories = calories
             }
             
             // たんぱく質/タンパク質/プロテイン
             if let protein = extractValue(from: text, patterns: [
-                "たんぱく質[\\s:]*([0-9.]+)\\s*g",
-                "タンパク質[\\s:]*([0-9.]+)\\s*g",
-                "蛋白質[\\s:]*([0-9.]+)\\s*g",
-                "プロテイン[\\s:]*([0-9.]+)\\s*g"
+                "たんぱく質[\\s:：]*([0-9.]+)\\s*g",
+                "タンパク質[\\s:：]*([0-9.]+)\\s*g",
+                "蛋白質[\\s:：]*([0-9.]+)\\s*g",
+                "プロテイン[\\s:：]*([0-9.]+)\\s*g",
+                "protein[\\s:：]*([0-9.]+)\\s*g",
+                "たん白質[\\s:：]*([0-9.]+)"
             ]) {
                 nutrition.protein = protein
             }
             
             // 脂質/脂肪
             if let fat = extractValue(from: text, patterns: [
-                "脂質[\\s:]*([0-9.]+)\\s*g",
-                "脂肪[\\s:]*([0-9.]+)\\s*g",
-                "fat[\\s:]*([0-9.]+)\\s*g"
+                "脂質[\\s:：]*([0-9.]+)\\s*g",
+                "脂肪[\\s:：]*([0-9.]+)\\s*g",
+                "fat[\\s:：]*([0-9.]+)\\s*g",
+                "脂肪分[\\s:：]*([0-9.]+)",
+                "lipid[\\s:：]*([0-9.]+)"
             ]) {
                 nutrition.fat = fat
             }
             
             // 炭水化物/糖質
             if let carbs = extractValue(from: text, patterns: [
-                "炭水化物[\\s:]*([0-9.]+)\\s*g",
-                "糖質[\\s:]*([0-9.]+)\\s*g",
-                "carb[\\s:]*([0-9.]+)\\s*g"
+                "炭水化物[\\s:：]*([0-9.]+)\\s*g",
+                "糖質[\\s:：]*([0-9.]+)\\s*g",
+                "carb[\\s:：]*([0-9.]+)\\s*g",
+                "carbohydrate[\\s:：]*([0-9.]+)",
+                "糖類[\\s:：]*([0-9.]+)"
             ]) {
                 nutrition.carbs = carbs
             }
@@ -291,8 +364,22 @@ struct NutritionOCRView: View {
         if nutrition.calories != nil || nutrition.protein != nil || 
            nutrition.fat != nil || nutrition.carbs != nil {
             recognizedNutrition = nutrition
+            
+            // 部分的に認識できなかった項目がある場合の警告
+            var missingItems: [String] = []
+            if nutrition.calories == nil { missingItems.append("カロリー") }
+            if nutrition.protein == nil { missingItems.append("たんぱく質") }
+            if nutrition.fat == nil { missingItems.append("脂質") }
+            if nutrition.carbs == nil { missingItems.append("炭水化物") }
+            
+            if !missingItems.isEmpty {
+                errorMessage = "⚠️ \(missingItems.joined(separator: "、"))が認識できませんでした。\n「手動編集」で入力してください。"
+            }
         } else {
-            errorMessage = "栄養成分を認識できませんでした。\n画像をはっきり撮影してください。"
+            // 全く認識できなかった場合は、空の結果を作成して手動入力を促す
+            recognizedNutrition = RecognizedNutrition()
+            errorMessage = "❌ 栄養成分を認識できませんでした。\n「手動編集」で値を入力してください。"
+            isManualEditMode = true // 自動で編集モードにする
         }
     }
     
@@ -316,28 +403,46 @@ struct NutritionOCRView: View {
     private func saveToFoodEntry() {
         guard let nutrition = recognizedNutrition else { return }
         
-        // Foodオブジェクトを作成（引数の順序を修正）
+        // 手動編集モードの場合は編集値を使用
+        let finalCalories: Double
+        let finalProtein: Double
+        let finalFat: Double
+        let finalCarbs: Double
+        
+        if isManualEditMode {
+            finalCalories = Double(manualCalories) ?? 0
+            finalProtein = Double(manualProtein) ?? 0
+            finalFat = Double(manualFat) ?? 0
+            finalCarbs = Double(manualCarbs) ?? 0
+        } else {
+            finalCalories = nutrition.calories ?? 0
+            finalProtein = nutrition.protein ?? 0
+            finalFat = nutrition.fat ?? 0
+            finalCarbs = nutrition.carbs ?? 0
+        }
+        
+        // Foodオブジェクトを作成
         let newFood = Food(
             id: UUID(),
             name: productName.isEmpty ? "OCR読取食品" : productName,
-            protein: nutrition.protein ?? 0,
-            fat: nutrition.fat ?? 0,
-            carbs: nutrition.carbs ?? 0,
-            calories: nutrition.calories ?? 0
+            protein: finalProtein,
+            fat: finalFat,
+            carbs: finalCarbs,
+            calories: finalCalories
         )
         
-        // FoodEntryStoreに追加（メソッド名を修正）
+        // FoodEntryStoreに追加
         foodEntryStore.add(food: newFood)
         
-        // FoodStoreにも追加（メソッド名を修正）
+        // FoodStoreにも追加
         foodStore.addFood(newFood)
         
         print("✅ 食事記録に追加:")
         print("商品名: \(productName)")
-        print("カロリー: \(nutrition.calories ?? 0) kcal")
-        print("たんぱく質: \(nutrition.protein ?? 0) g")
-        print("脂質: \(nutrition.fat ?? 0) g")
-        print("炭水化物: \(nutrition.carbs ?? 0) g")
+        print("カロリー: \(finalCalories) kcal")
+        print("たんぱく質: \(finalProtein) g")
+        print("脂質: \(finalFat) g")
+        print("炭水化物: \(finalCarbs) g")
         
         dismiss()
     }
