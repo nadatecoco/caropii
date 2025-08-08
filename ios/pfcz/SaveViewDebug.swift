@@ -9,6 +9,7 @@ struct SaveViewDebug: View {
     @State private var isAnalyzing = false
     @State private var analysisResult: String?
     @State private var showingAnalysisResult = false
+    @State private var showingOCRView = false
     
     var body: some View {
         VStack(spacing: 20) {
@@ -119,24 +120,40 @@ struct SaveViewDebug: View {
                 }
             }
             
-            // AI分析ボタン
-            VStack {
+            // ボタン群
+            HStack(spacing: 10) {
+                // 写真読み取りボタン
+                Button(action: {
+                    showingOCRView = true
+                }) {
+                    VStack {
+                        Image(systemName: "camera.viewfinder")
+                            .font(.title2)
+                        Text("写真読取")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.orange)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                
+                // AI分析ボタン
                 Button(action: {
                     sendTodayDataAndAnalyze()
                 }) {
-                    HStack {
+                    VStack {
                         if isAnalyzing {
                             ProgressView()
                                 .scaleEffect(0.8)
                                 .foregroundColor(.white)
-                            Text("AI分析中...")
-                                .font(.headline)
-                                .fontWeight(.semibold)
                         } else {
-                            Text("AI分析する")
-                                .font(.headline)
-                                .fontWeight(.semibold)
+                            Image(systemName: "brain")
+                                .font(.title2)
                         }
+                        Text(isAnalyzing ? "分析中..." : "AI分析")
+                            .font(.caption)
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -157,6 +174,11 @@ struct SaveViewDebug: View {
             if let result = analysisResult {
                 AnalysisResultView(analysisText: result)
             }
+        }
+        .sheet(isPresented: $showingOCRView) {
+            NutritionOCRView()
+                .environmentObject(foodStore)
+                .environmentObject(foodEntryStore)
         }
     }
     
