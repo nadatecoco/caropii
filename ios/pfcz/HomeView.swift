@@ -93,6 +93,22 @@ struct HomeView: View {
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
+                
+                // 体重データボタン（新規追加）
+                NavigationLink(destination: BodyMassView()) {
+                    HStack {
+                        Image(systemName: "scalemass.fill")
+                            .font(.title2)
+                        Text("体重データ")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.mint)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
             }
             
             Spacer()

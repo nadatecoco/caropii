@@ -1,22 +1,42 @@
 import Foundation
 import HealthKit
 
+// 日付区切り時刻の定数
+let dayBoundaryHour = 4 // 午前4時を日付の区切りとする（将来的に設定可能に）
+
 // ヘルスケアデータの共通モデル
-struct HealthDataRecord: Codable {
+struct HealthDataRecord: Codable, Identifiable {
     let id: UUID
     let type: HealthDataType
     let value: Double
-    let unit: String
-    let date: Date
-    let source: String // "HealthKit", "Manual", etc
+    let unitString: String // 単位文字列（HKUnit.stringRepresentation）
+    let startDate: Date  // 開始日時
+    let endDate: Date?   // 終了日時（瞬間的なデータの場合はnil）
+    let source: String   // "HealthKit", "Manual", etc
     
-    init(id: UUID = UUID(), type: HealthDataType, value: Double, unit: String, date: Date, source: String = "HealthKit") {
+    // 後方互換性のための旧プロパティ
+    var date: Date { startDate }
+    var unit: String { unitString }
+    
+    init(id: UUID = UUID(), 
+         type: HealthDataType, 
+         value: Double, 
+         unitString: String, 
+         startDate: Date,
+         endDate: Date? = nil,
+         source: String = "HealthKit") {
         self.id = id
         self.type = type
         self.value = value
-        self.unit = unit
-        self.date = date
+        self.unitString = unitString
+        self.startDate = startDate
+        self.endDate = endDate
         self.source = source
+    }
+    
+    // 後方互換のための旧イニシャライザー
+    init(id: UUID = UUID(), type: HealthDataType, value: Double, unit: String, date: Date, source: String = "HealthKit") {
+        self.init(id: id, type: type, value: value, unitString: unit, startDate: date, endDate: nil, source: source)
     }
 }
 
