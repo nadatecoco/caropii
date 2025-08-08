@@ -60,20 +60,18 @@ struct HomeView: View {
                     .cornerRadius(12)
                 }
                 
-                // 睡眠データテスト用ボタン
-                Button(action: {
-                    requestSleepData()
-                }) {
+                // 睡眠データボタン（更新版）
+                NavigationLink(destination: SleepDataView()) {
                     HStack {
-                        Image(systemName: "moon.fill")
+                        Image(systemName: "moon.zzz.fill")
                             .font(.title2)
-                        Text("睡眠データ取得テスト")
+                        Text("睡眠データ")
                             .font(.headline)
                             .fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.purple)
+                    .background(Color.indigo)
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
@@ -106,6 +104,38 @@ struct HomeView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.mint)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                
+                // 活動データボタン（新規追加）
+                NavigationLink(destination: ActivityDataView()) {
+                    HStack {
+                        Image(systemName: "figure.walk.motion")
+                            .font(.title2)
+                        Text("活動データ")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.teal)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                
+                // ワークアウト履歴ボタン（新規追加）
+                NavigationLink(destination: WorkoutDataView()) {
+                    HStack {
+                        Image(systemName: "figure.run.circle.fill")
+                            .font(.title2)
+                        Text("ワークアウト履歴")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.purple)
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
