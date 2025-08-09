@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DataManagementView: View {
     @EnvironmentObject var foodStore: FoodStore
+    @EnvironmentObject var foodEntryStore: FoodEntryStore
     
     var body: some View {
         VStack(spacing: 30) {
@@ -23,6 +24,24 @@ struct DataManagementView: View {
             
             // 管理メニュー
             VStack(spacing: 20) {
+                // 保存済み食事記録（新規追加）
+                NavigationLink(destination: SavedFoodRecordsView()
+                    .environmentObject(foodStore)
+                    .environmentObject(foodEntryStore)) {
+                    HStack {
+                        Image(systemName: "doc.text.fill")
+                            .font(.title2)
+                        Text("保存済み食事記録")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                
                 // 食材データ管理
                 NavigationLink(destination: FoodDatabaseView()
                     .environmentObject(foodStore)) {

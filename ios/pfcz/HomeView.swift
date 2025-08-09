@@ -45,7 +45,9 @@ struct HomeView: View {
                 }
                 
                 // 新UI テスト用（一時的）
-                NavigationLink(destination: FoodLogScreen()) {
+                NavigationLink(destination: FoodLogScreen()
+                    .environmentObject(foodStore)
+                    .environmentObject(foodEntryStore)) {
                     HStack {
                         Image(systemName: "sparkles")
                             .font(.title2)
@@ -61,7 +63,8 @@ struct HomeView: View {
                 }
                 
                 NavigationLink(destination: DataManagementView()
-                    .environmentObject(foodStore)) {
+                    .environmentObject(foodStore)
+                    .environmentObject(foodEntryStore)) {
                     HStack {
                         Image(systemName: "folder.circle.fill")
                             .font(.title2)
