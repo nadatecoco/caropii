@@ -10,6 +10,11 @@ struct SaveViewDebug: View {
     @State private var analysisResult: String?
     @State private var showingAnalysisResult = false
     @State private var showingOCRView = false
+    @State private var showingBarcodeScanner = false
+    @State private var showingSaveAlert = false
+    @State private var saveAlertMessage = ""
+    @State private var showingEmptySaveAlert = false
+    @State private var showingEmptyAnalysisAlert = false
     
     var body: some View {
         VStack(spacing: 20) {
@@ -120,8 +125,25 @@ struct SaveViewDebug: View {
                 }
             }
             
-            // ボタン群
-            HStack(spacing: 10) {
+            // 入力ボタン群（上段）
+            HStack(spacing: 8) {
+                // バーコードスキャンボタン
+                Button(action: {
+                    showingBarcodeScanner = true
+                }) {
+                    VStack {
+                        Image(systemName: "barcode.viewfinder")
+                            .font(.title2)
+                        Text("バーコード")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                
                 // 写真読み取りボタン
                 Button(action: {
                     showingOCRView = true
@@ -138,10 +160,39 @@ struct SaveViewDebug: View {
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
+            }
+            .padding(.horizontal)
+            
+            // アクションボタン群（下段）
+            HStack(spacing: 8) {
+                // 保存ボタン
+                Button(action: {
+                    if foodEntryStore.todayEntries.isEmpty {
+                        showingEmptySaveAlert = true
+                    } else {
+                        saveTodayData()
+                    }
+                }) {
+                    VStack {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.title2)
+                        Text("記録を保存")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(foodEntryStore.todayEntries.isEmpty ? Color.gray : Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
                 
                 // AI分析ボタン
                 Button(action: {
-                    sendTodayDataAndAnalyze()
+                    if foodEntryStore.todayEntries.isEmpty {
+                        showingEmptyAnalysisAlert = true
+                    } else {
+                        sendTodayDataAndAnalyze()
+                    }
                 }) {
                     VStack {
                         if isAnalyzing {
@@ -157,11 +208,10 @@ struct SaveViewDebug: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.purple)
+                    .background(foodEntryStore.todayEntries.isEmpty ? Color.gray : Color.purple)
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
-                .disabled(foodEntryStore.todayEntries.isEmpty)
             }
             .padding(.horizontal)
             
@@ -179,6 +229,89 @@ struct SaveViewDebug: View {
             NutritionOCRView()
                 .environmentObject(foodStore)
                 .environmentObject(foodEntryStore)
+        }
+        .sheet(isPresented: $showingBarcodeScanner) {
+            BarcodeScannerView()
+                .environmentObject(foodStore)
+                .environmentObject(foodEntryStore)
+        }
+        .alert("保存完了", isPresented: $showingSaveAlert) {
+            Button("OK") { }
+        } message: {
+            Text(saveAlertMessage)
+        }
+        .alert("記録がありません", isPresented: $showingEmptySaveAlert) {
+            Button("OK") { }
+        } message: {
+            Text("食材を選択してから保存してください")
+        }
+        .alert("分析対象がありません", isPresented: $showingEmptyAnalysisAlert) {
+            Button("OK") { }
+        } message: {
+            Text("食材を選択してからAI分析を実行してください")
+        }
+    }
+    
+    private func saveTodayData() {
+        let todayEntries = foodEntryStore.todayEntries
+        guard !todayEntries.isEmpty else { return }
+        
+        // 今日の日付を取得
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dateString = formatter.string(from: Date())
+        
+        // 保存用データを作成
+        var todayData: [[String: Any]] = []
+        for entry in todayEntries {
+            let foodData: [String: Any] = [
+                "name": entry.food.name,
+                "calories": entry.food.calories,
+                "protein": entry.food.protein,
+                "fat": entry.food.fat,
+                "carbs": entry.food.carbs,
+                "date": ISO8601DateFormatter().string(from: entry.date)
+            ]
+            todayData.append(foodData)
+        }
+        
+        // 栄養成分の合計を計算
+        let totalData: [String: Any] = [
+            "date": dateString,
+            "totalCalories": foodEntryStore.todayTotalCalories,
+            "totalProtein": foodEntryStore.todayTotalProtein,
+            "totalFat": foodEntryStore.todayTotalFat,
+            "totalCarbs": foodEntryStore.todayTotalCarbs,
+            "entries": todayData
+        ]
+        
+        // UserDefaultsに日付をキーとして保存
+        let userDefaults = UserDefaults.standard
+        let key = "food_record_\(dateString)"
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: totalData)
+            userDefaults.set(jsonData, forKey: key)
+            
+            // 保存済み日付リストを更新
+            var savedDates = userDefaults.stringArray(forKey: "saved_food_dates") ?? []
+            if !savedDates.contains(dateString) {
+                savedDates.append(dateString)
+                userDefaults.set(savedDates, forKey: "saved_food_dates")
+            }
+            
+            // 成功メッセージを表示
+            saveAlertMessage = "\(dateString)の食事記録を保存しました。\n合計: \(Int(foodEntryStore.todayTotalCalories))kcal"
+            showingSaveAlert = true
+            
+            print("✅ 食事記録をローカルに保存: \(key)")
+            print("  エントリー数: \(todayEntries.count)")
+            print("  合計カロリー: \(foodEntryStore.todayTotalCalories)kcal")
+            
+        } catch {
+            print("❌ 保存エラー: \(error.localizedDescription)")
+            saveAlertMessage = "保存に失敗しました: \(error.localizedDescription)"
+            showingSaveAlert = true
         }
     }
     
