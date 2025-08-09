@@ -132,6 +132,7 @@ struct ContentView: View {
             .background(Color.blue.opacity(0.2))
             .cornerRadius(10)
             
+            
             Spacer()
         }
         .padding()

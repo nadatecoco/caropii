@@ -44,6 +44,22 @@ struct HomeView: View {
                     .cornerRadius(12)
                 }
                 
+                // 新UI テスト用（一時的）
+                NavigationLink(destination: FoodLogScreen()) {
+                    HStack {
+                        Image(systemName: "sparkles")
+                            .font(.title2)
+                        Text("新しい食事記録UI")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.purple)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                
                 NavigationLink(destination: DataManagementView()
                     .environmentObject(foodStore)) {
                     HStack {
