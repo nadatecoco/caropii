@@ -1,18 +1,40 @@
 import SwiftUI
 
-// Slice 5: 保存機能を追加
+// Slice 6: お気に入り機能を追加
 struct FoodLogScreen: View {
     @EnvironmentObject var foodStore: FoodStore
     @EnvironmentObject var foodEntryStore: FoodEntryStore
     
     // @Stateで削除可能なリストに変更
-    @State private var foods = [
-        ("卵", "1個", 76),  // カロリーを数値に変更
-        ("白米", "150g", 252),
-        ("鶏胸肉", "100g", 108)
-    ]
+    @State private var foods: [(String, String, Int)] = []
     
     @State private var showingSaveAlert = false
+    
+    // Slice 10: インライン編集用の状態
+    @State private var editingIndex: Int? = nil
+    @State private var editingValue: String = ""
+    @FocusState private var isTextFieldFocused: Bool
+    @State private var previousEditingIndex: Int? = nil
+    
+    // Slice 14: 使用頻度管理
+    @AppStorage("foodUsageCount") private var usageCountData: Data = Data()
+    @State private var usageCount: [String: Int] = [:]
+    @State private var sortedFavorites: [(String, String, Int)] = []
+    
+    // Slice 13: お気に入り食材（6個に拡張）
+    let defaultFavorites = [
+        ("卵", "1個", 76),
+        ("鶏胸肉", "100g", 108),
+        ("白米", "150g", 252),
+        ("納豆", "1パック", 100),
+        ("牛乳", "200ml", 134),
+        ("サラダチキン", "125g", 135)
+    ]
+    
+    // Slice 14: お気に入りの参照（画面中は固定）
+    var favorites: [(String, String, Int)] {
+        sortedFavorites.isEmpty ? defaultFavorites : sortedFavorites
+    }
     
     // 合計カロリーを計算
     var totalCalories: Int {
@@ -21,7 +43,8 @@ struct FoodLogScreen: View {
     
     var body: some View {
         NavigationView {
-            VStack(alignment: .leading, spacing: 16) {
+            ZStack {
+                VStack(alignment: .leading, spacing: 16) {
                 Text("食事記録")
                     .font(.title)
                     .padding(.horizontal)
@@ -40,45 +63,137 @@ struct FoodLogScreen: View {
                 .cornerRadius(10)
                 .padding(.horizontal)
                 
-                // Slice 3: 卵を追加するボタン
-                Button(action: {
-                    // 卵を追加（固定値、数値型に修正）
-                    foods.append(("卵", "1個", 76))
-                }) {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                        Text("卵を追加")
+                // Slice 13: お気に入り（グリッド表示で6個）
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("お気に入り")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+                    
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        ForEach(favorites, id: \.0) { favorite in
+                            Button(action: {
+                                // Slice 8: 既存があれば加算、なければ新規追加
+                                if let index = foods.firstIndex(where: { $0.0 == favorite.0 }) {
+                                    // 既存の食材を加算（個数を増やす）
+                                    let current = foods[index]
+                                    let newFood: (String, String, Int)
+                                    
+                                    if favorite.0 == "卵" {
+                                        // 卵の場合：個数を増やす
+                                        let currentCount = Int(current.1.replacingOccurrences(of: "個", with: "")) ?? 1
+                                        newFood = (current.0, "\(currentCount + 1)個", current.2 + favorite.2)
+                                    } else if favorite.0 == "納豆" {
+                                        // 納豆の場合：パック数を増やす
+                                        let currentPacks = Int(current.1.replacingOccurrences(of: "パック", with: "")) ?? 1
+                                        newFood = (current.0, "\(currentPacks + 1)パック", current.2 + favorite.2)
+                                    } else if favorite.0 == "牛乳" {
+                                        // 牛乳の場合：mlを増やす
+                                        let currentMl = Int(current.1.replacingOccurrences(of: "ml", with: "")) ?? 0
+                                        let additionalMl = Int(favorite.1.replacingOccurrences(of: "ml", with: "")) ?? 0
+                                        newFood = (current.0, "\(currentMl + additionalMl)ml", current.2 + favorite.2)
+                                    } else {
+                                        // グラムの場合：量を増やす
+                                        let currentGram = Int(current.1.replacingOccurrences(of: "g", with: "")) ?? 0
+                                        let additionalGram = Int(favorite.1.replacingOccurrences(of: "g", with: "")) ?? 0
+                                        newFood = (current.0, "\(currentGram + additionalGram)g", current.2 + favorite.2)
+                                    }
+                                    
+                                    foods[index] = newFood
+                                } else {
+                                    // 新規追加
+                                    foods.append(favorite)
+                                }
+                                
+                                // Slice 14: 使用回数をカウント
+                                usageCount[favorite.0] = (usageCount[favorite.0] ?? 0) + 1
+                                saveUsageCount()
+                            }) {
+                                VStack(spacing: 4) {
+                                    Text(favorite.0)
+                                        .font(.body)
+                                        .fontWeight(.medium)
+                                    Text(favorite.1)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(10)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                     }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
+                
+                // 操作ヒント
+                Text("タップで追加 ／ 左スワイプで減らす ／ 右スワイプで削除")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal)
                 
                 // スワイプ削除可能なリスト
                 List {
-                    ForEach(Array(foods.enumerated()), id: \.offset) { index, food in
-                        HStack {
-                            Text(food.0)  // 食材名
-                                .font(.body)
-                            
-                            Spacer()
-                            
-                            Text(food.1)  // 量
-                                .foregroundColor(.secondary)
-                            
-                            Text("\(food.2) kcal")  // カロリー
-                                .foregroundColor(.blue)
+                    ForEach(Array(foods.enumerated()), id: \.element.0) { index, food in
+                        foodRow(index: index, food: food)
+                        .contentShape(Rectangle())  // Slice 12: タップ領域を行全体に
+                        .onTapGesture {
+                            // Slice 12: 編集中でない部分をタップしたら編集終了
+                            if editingIndex != nil && editingIndex != index {
+                                finishEditing()
+                            }
                         }
-                        .padding(.vertical, 4)
                         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button(role: .destructive) {
-                                // スワイプで削除
+                                // 右スワイプで削除
                                 foods.remove(at: index)
                             } label: {
                                 Label("削除", systemImage: "trash")
                             }
+                        }
+                        // Slice 9a: 左スワイプで減算（軽い操作で即反応）
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                let current = foods[index]
+                                
+                                if current.0 == "卵" {
+                                    // 卵の場合：1個減らす
+                                    let currentCount = Int(current.1.replacingOccurrences(of: "個", with: "")) ?? 1
+                                    if currentCount > 1 {
+                                        foods[index] = (current.0, "\(currentCount - 1)個", current.2 - 76)
+                                    } else {
+                                        // 1個の場合は削除
+                                        foods.remove(at: index)
+                                    }
+                                } else {
+                                    // グラムの場合：既定量を減らす
+                                    let currentGram = Int(current.1.replacingOccurrences(of: "g", with: "")) ?? 0
+                                    let decrementGram = current.0 == "鶏胸肉" ? 100 : 150  // 既定量
+                                    let caloriesPerGram = current.0 == "鶏胸肉" ? 1.08 : 1.68  // カロリー/g
+                                    
+                                    if currentGram > decrementGram {
+                                        let newGram = currentGram - decrementGram
+                                        let newCalories = Int(Double(newGram) * caloriesPerGram)
+                                        foods[index] = (current.0, "\(newGram)g", newCalories)
+                                    } else {
+                                        // 既定量以下の場合は削除
+                                        foods.remove(at: index)
+                                    }
+                                }
+                                
+                                // ハプティックフィードバック
+                                let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                                impactFeedback.impactOccurred()
+                            } label: {
+                                Label("減らす", systemImage: "minus.circle.fill")
+                            }
+                            .tint(.orange)
                         }
                     }
                 }
@@ -96,14 +211,57 @@ struct FoodLogScreen: View {
                         .cornerRadius(10)
                 }
                 .padding(.horizontal)
+                }
+                .navigationTitle("今日の食事")
+                .navigationBarTitleDisplayMode(.inline)
+                // Slice 11: キーボードツールバー（ここに移動）
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        if let index = editingIndex {
+                            let food = foods[index]
+                            // 単位に応じたボタン
+                            if food.0 == "卵" {
+                                Button("-1") {
+                                    adjustValue(-1)
+                                }
+                                Button("+1") {
+                                    adjustValue(1)
+                                }
+                            } else {
+                                Button("-50") {
+                                    adjustValue(-50)
+                                }
+                                Button("-10") {
+                                    adjustValue(-10)
+                                }
+                                Button("+10") {
+                                    adjustValue(10)
+                                }
+                                Button("+50") {
+                                    adjustValue(50)
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            Button("完了") {
+                                finishEditing()
+                            }
+                            .fontWeight(.semibold)
+                        }
+                    }
+                }
             }
-            .navigationTitle("今日の食事")
-            .navigationBarTitleDisplayMode(.inline)
         }
         .alert("保存完了", isPresented: $showingSaveAlert) {
             Button("OK") { }
         } message: {
             Text("\(foods.count)件の食事記録を保存しました")
+        }
+        .onAppear {
+            loadUsageCount()
+            // 画面表示時に一度だけソート
+            sortFavoritesByUsage()
         }
     }
     
@@ -125,6 +283,173 @@ struct FoodLogScreen: View {
         
         // 保存後にリストを空にする（正しい動作）
         foods.removeAll()
+    }
+    
+    // Slice 10: 編集開始
+    private func startEditing(at index: Int) {
+        // インデックスが有効か確認
+        guard index < foods.count else { return }
+        
+        // Slice 12: 前の編集を保存
+        if let prevIndex = editingIndex, prevIndex != index {
+            finishEditing()
+        }
+        
+        let food = foods[index]
+        editingIndex = index
+        previousEditingIndex = index
+        
+        // 数値部分だけ抽出
+        if food.0 == "卵" {
+            editingValue = food.1.replacingOccurrences(of: "個", with: "")
+        } else if food.0 == "納豆" {
+            editingValue = food.1.replacingOccurrences(of: "パック", with: "")
+        } else if food.0 == "牛乳" {
+            editingValue = food.1.replacingOccurrences(of: "ml", with: "")
+        } else {
+            editingValue = food.1.replacingOccurrences(of: "g", with: "")
+        }
+        
+        // Slice 12: 少し遅延してフォーカス（SwiftUIの描画完了を待つ）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            isTextFieldFocused = true
+        }
+    }
+    
+    // Slice 10: 編集完了
+    private func finishEditing() {
+        guard let index = editingIndex, index < foods.count else {
+            editingIndex = nil
+            isTextFieldFocused = false
+            return
+        }
+        
+        // Slice 12: 値検証と更新
+        if let value = Int(editingValue), value > 0 {
+            let food = foods[index]
+            if food.0 == "卵" {
+                // 卵の場合：個数とカロリー更新（最大99個まで）
+                let validValue = min(value, 99)
+                foods[index] = (food.0, "\(validValue)個", validValue * 76)
+            } else {
+                // グラムの場合：重量とカロリー更新（最大9999gまで）
+                let validValue = min(value, 9999)
+                let caloriesPerGram = food.0 == "鶏胸肉" ? 1.08 : 1.68
+                foods[index] = (food.0, "\(validValue)g", Int(Double(validValue) * caloriesPerGram))
+            }
+        } else if editingValue.isEmpty || editingValue == "0" {
+            // Slice 12: 0または空の場合は元の値に戻す
+            let food = foods[index]
+            if food.0 == "卵" {
+                editingValue = food.1.replacingOccurrences(of: "個", with: "")
+            } else {
+                editingValue = food.1.replacingOccurrences(of: "g", with: "")
+            }
+        }
+        
+        editingIndex = nil
+        isTextFieldFocused = false
+        previousEditingIndex = nil
+    }
+    
+    // Slice 11: 値の調整
+    private func adjustValue(_ delta: Int) {
+        guard let index = editingIndex, index < foods.count else { return }
+        
+        guard let current = Int(editingValue) else {
+            editingValue = "0"
+            return
+        }
+        
+        let newValue = max(0, current + delta)
+        editingValue = String(newValue)
+    }
+    
+    // Slice 13: 食材に応じた単位を返す
+    private func unitForFood(_ foodName: String) -> String {
+        switch foodName {
+        case "卵":
+            return "個"
+        case "納豆":
+            return "パック"
+        case "牛乳":
+            return "ml"
+        default:
+            return "g"
+        }
+    }
+    
+    // Slice 10: 行のビューを分離（コンパイラ負荷軽減）
+    @ViewBuilder
+    private func foodRow(index: Int, food: (String, String, Int)) -> some View {
+        HStack {
+            Text(food.0)  // 食材名
+                .font(.body)
+            
+            Spacer()
+            
+            // インライン編集部分
+            if editingIndex == index {
+                // 編集モード
+                HStack(spacing: 4) {
+                    TextField("0", text: $editingValue)
+                        .keyboardType(.numberPad)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 60)
+                        .focused($isTextFieldFocused)
+                        .onChange(of: editingValue) { _, newValue in
+                            // Slice 12: 数字のみ許可
+                            let filtered = newValue.filter { $0.isNumber }
+                            if filtered != newValue {
+                                editingValue = filtered
+                            }
+                        }
+                        .onSubmit {
+                            finishEditing()
+                        }
+                    
+                    // Slice 13: 単位表示を拡充
+                    Text(unitForFood(food.0))
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                // 通常表示
+                Button(action: {
+                    startEditing(at: index)
+                }) {
+                    Text(food.1)  // 量
+                        .foregroundColor(.secondary)
+                        .underline()
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            
+            Text("\(food.2) kcal")  // カロリー
+                .foregroundColor(.blue)
+        }
+        .padding(.vertical, 4)
+    }
+    
+    // Slice 14: 使用頻度の保存と読み込み
+    private func saveUsageCount() {
+        if let data = try? JSONEncoder().encode(usageCount) {
+            usageCountData = data
+        }
+    }
+    
+    private func loadUsageCount() {
+        if let decoded = try? JSONDecoder().decode([String: Int].self, from: usageCountData) {
+            usageCount = decoded
+        }
+    }
+    
+    // Slice 14改: 画面表示時にソート
+    private func sortFavoritesByUsage() {
+        sortedFavorites = defaultFavorites.sorted { first, second in
+            let firstCount = usageCount[first.0] ?? 0
+            let secondCount = usageCount[second.0] ?? 0
+            return firstCount > secondCount
+        }
     }
 }
 
