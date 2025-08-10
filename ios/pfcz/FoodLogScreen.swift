@@ -41,6 +41,45 @@ struct FoodLogScreen: View {
         foods.reduce(0) { $0 + $1.2 }
     }
     
+    // PFC計算（仮の値）
+    var totalProtein: Int {
+        // 簡易計算: カロリーの20%をタンパク質とする
+        foods.reduce(0) { total, food in
+            if food.0 == "卵" {
+                return total + 6 * (Int(food.1.replacingOccurrences(of: "個", with: "")) ?? 0)
+            } else if food.0 == "鶏胸肉" || food.0 == "サラダチキン" {
+                return total + (Int(food.1.replacingOccurrences(of: "g", with: "")) ?? 0) / 4
+            } else if food.0 == "納豆" {
+                return total + 8 * (Int(food.1.replacingOccurrences(of: "パック", with: "")) ?? 0)
+            }
+            return total + 2
+        }
+    }
+    
+    var totalFat: Int {
+        // 簡易計算
+        foods.reduce(0) { total, food in
+            if food.0 == "卵" {
+                return total + 5 * (Int(food.1.replacingOccurrences(of: "個", with: "")) ?? 0)
+            } else if food.0 == "牛乳" {
+                return total + (Int(food.1.replacingOccurrences(of: "ml", with: "")) ?? 0) / 25
+            }
+            return total + 3
+        }
+    }
+    
+    var totalCarbs: Int {
+        // 簡易計算
+        foods.reduce(0) { total, food in
+            if food.0 == "白米" {
+                return total + (Int(food.1.replacingOccurrences(of: "g", with: "")) ?? 0) * 37 / 100
+            } else if food.0 == "牛乳" {
+                return total + (Int(food.1.replacingOccurrences(of: "ml", with: "")) ?? 0) / 20
+            }
+            return total + 5
+        }
+    }
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -49,11 +88,26 @@ struct FoodLogScreen: View {
                     .font(.title)
                     .padding(.horizontal)
                 
-                // Slice 4: 合計カロリー表示
+                // Slice 4: 合計カロリー表示（PFC付き）
                 HStack {
                     Text("合計")
                         .font(.headline)
+                    
                     Spacer()
+                    
+                    // PFC数値を1行で表示
+                    HStack(spacing: 12) {
+                        Text("P:\(totalProtein)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("F:\(totalFat)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("C:\(totalCarbs)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
                     Text("\(totalCalories) kcal")
                         .font(.headline)
                         .foregroundColor(.blue)
@@ -386,10 +440,50 @@ struct FoodLogScreen: View {
             Text(food.0)  // 食材名
                 .font(.body)
             
+            // クイック調整ボタン（左側に配置）
+            if editingIndex != index {
+                HStack(spacing: 8) {
+                    // 減らすボタン
+                    Button(action: {
+                        quickAdjust(at: index, isIncrease: false)
+                    }) {
+                        Image(systemName: "minus.circle.fill")
+                            .foregroundColor(.orange)
+                            .font(.system(size: 28))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // 増やすボタン
+                    Button(action: {
+                        quickAdjust(at: index, isIncrease: true)
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundColor(.green)
+                            .font(.system(size: 28))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            
             Spacer()
             
-            // インライン編集部分
-            if editingIndex == index {
+            // 量表示とインライン編集
+            if editingIndex != index {
+                // 量表示（タップで編集）
+                Button(action: {
+                    startEditing(at: index)
+                }) {
+                    Text(food.1)  // 量
+                        .foregroundColor(.primary)
+                        .fontWeight(.medium)
+                        .frame(minWidth: 50)
+                }
+                .buttonStyle(PlainButtonStyle())
+            } else {
                 // 編集モード
                 HStack(spacing: 4) {
                     TextField("0", text: $editingValue)
@@ -412,22 +506,61 @@ struct FoodLogScreen: View {
                     Text(unitForFood(food.0))
                         .foregroundColor(.secondary)
                 }
-            } else {
-                // 通常表示
-                Button(action: {
-                    startEditing(at: index)
-                }) {
-                    Text(food.1)  // 量
-                        .foregroundColor(.secondary)
-                        .underline()
-                }
-                .buttonStyle(PlainButtonStyle())
             }
             
             Text("\(food.2) kcal")  // カロリー
                 .foregroundColor(.blue)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
+    }
+    
+    // クイック調整メソッド（桁数に応じた自動調整）
+    private func quickAdjust(at index: Int, isIncrease: Bool) {
+        guard index < foods.count else { return }
+        
+        let current = foods[index]
+        
+        // 現在の数値を抽出
+        let numericString = current.1.replacingOccurrences(of: "個", with: "")
+            .replacingOccurrences(of: "パック", with: "")
+            .replacingOccurrences(of: "ml", with: "")
+            .replacingOccurrences(of: "g", with: "")
+        
+        let currentValue = Int(numericString) ?? 0
+        
+        // 桁数に応じた調整量を決定
+        let delta: Int
+        if currentValue < 10 {
+            delta = 1  // 1桁: ±1
+        } else if currentValue < 100 {
+            delta = 10  // 2桁: ±10
+        } else {
+            delta = 50  // 3桁以上: ±50
+        }
+        
+        // 新しい値を計算
+        let newValue = isIncrease ? currentValue + delta : max(1, currentValue - delta)
+        
+        // 単位と新しい文字列を生成
+        var newAmount: String
+        var newCalories: Int
+        
+        if current.0 == "卵" {
+            newAmount = "\(newValue)個"
+            newCalories = newValue * 76
+        } else if current.0 == "納豆" {
+            newAmount = "\(newValue)パック"
+            newCalories = newValue * 100
+        } else if current.0 == "牛乳" {
+            newAmount = "\(newValue)ml"
+            newCalories = Int(Double(newValue) * 0.67)
+        } else {
+            newAmount = "\(newValue)g"
+            let caloriesPerGram: Double = (current.0 == "鶏胸肉" || current.0 == "サラダチキン") ? 1.08 : 1.68
+            newCalories = Int(Double(newValue) * caloriesPerGram)
+        }
+        
+        foods[index] = (current.0, newAmount, newCalories)
     }
     
     // Slice 14: 使用頻度の保存と読み込み
