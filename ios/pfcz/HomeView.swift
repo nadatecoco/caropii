@@ -27,7 +27,7 @@ struct HomeView: View {
             
             // メインボタン
             VStack(spacing: 20) {
-                NavigationLink(destination: SaveViewDebug()
+                NavigationLink(destination: FoodLogScreen()
                     .environmentObject(foodStore)
                     .environmentObject(foodEntryStore)) {
                     HStack {
@@ -44,23 +44,6 @@ struct HomeView: View {
                     .cornerRadius(12)
                 }
                 
-                // 新UI テスト用（一時的）
-                NavigationLink(destination: FoodLogScreen()
-                    .environmentObject(foodStore)
-                    .environmentObject(foodEntryStore)) {
-                    HStack {
-                        Image(systemName: "sparkles")
-                            .font(.title2)
-                        Text("新しい食事記録UI")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.purple)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                }
                 
                 NavigationLink(destination: DataManagementView()
                     .environmentObject(foodStore)
