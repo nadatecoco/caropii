@@ -69,7 +69,7 @@ class FoodStore: ObservableObject {
             Food(name: "さば", protein: 20.0, fat: 16.0, carbs: 0.0, calories: 247),
             
             // 穀物
-            Food(name: "白米", protein: 2.5, fat: 0.3, carbs: 37.0, calories: 168),
+            Food(name: "白米", protein: 2.5, fat: 0.5, carbs: 37.0, calories: 168),
             Food(name: "玄米", protein: 2.8, fat: 1.0, carbs: 35.6, calories: 165),
             Food(name: "パン", protein: 9.0, fat: 4.4, carbs: 46.0, calories: 264),
             Food(name: "うどん", protein: 2.6, fat: 0.4, carbs: 21.6, calories: 105),

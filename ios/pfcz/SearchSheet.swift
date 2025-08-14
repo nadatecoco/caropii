@@ -4,7 +4,7 @@ struct SearchSheet: View {
     let foodStore: FoodStore
     let onAdd: (Food, Int) -> Void
     @Binding var addedCount: Int
-    @Binding var currentFoods: [(String, String, Int)]
+    @Binding var currentFoods: [(Food, String, Int)]
     
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
@@ -44,9 +44,9 @@ struct SearchSheet: View {
                         
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
-                                ForEach(Array(currentFoods.enumerated()), id: \.element.0) { _, food in
+                                ForEach(Array(currentFoods.enumerated()), id: \.element.0.id) { _, food in
                                     HStack(spacing: 4) {
-                                        Text(food.0)
+                                        Text(food.0.name)
                                             .font(.caption2)
                                             .fontWeight(.medium)
                                         Text(food.1)
@@ -56,7 +56,7 @@ struct SearchSheet: View {
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 6)
                                     .background(
-                                        food.0 == lastAddedFood 
+                                        food.0.name == lastAddedFood 
                                             ? Color.green.opacity(0.3)
                                             : Color.green.opacity(0.1)
                                     )
@@ -64,13 +64,13 @@ struct SearchSheet: View {
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 14)
                                             .stroke(
-                                                food.0 == lastAddedFood
+                                                food.0.name == lastAddedFood
                                                     ? Color.green.opacity(0.6)
                                                     : Color.green.opacity(0.3),
-                                                lineWidth: food.0 == lastAddedFood ? 2 : 1
+                                                lineWidth: food.0.name == lastAddedFood ? 2 : 1
                                             )
                                     )
-                                    .scaleEffect(food.0 == lastAddedFood ? 1.1 : 1.0)
+                                    .scaleEffect(food.0.name == lastAddedFood ? 1.1 : 1.0)
                                     .animation(.spring(response: 0.3, dampingFraction: 0.7), value: lastAddedFood)
                                 }
                             }
