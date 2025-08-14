@@ -8,6 +8,7 @@ Rails.application.routes.draw do
   # API routes
   resources :food_entries, only: [:create]
   get 'food_entries/today', to: 'food_entries#today'
+  delete 'food_entries/clear_today', to: 'food_entries#clear_today'
   
   # 栄養分析API
   post 'food_entries/analyze_nutrition', to: 'food_entries#analyze_nutrition'

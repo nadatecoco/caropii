@@ -16,6 +16,12 @@ class FoodEntriesController < ApplicationController
     render json: @food_entries
   end
 
+  # 今日のデータをクリア
+  def clear_today
+    FoodEntry.today.destroy_all
+    head :no_content
+  end
+
   # 栄養分析実行
   def analyze_nutrition
     analyzer = HealthAnalyzer.new

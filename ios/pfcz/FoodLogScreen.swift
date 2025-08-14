@@ -29,6 +29,12 @@ struct FoodLogScreen: View {
     @State private var showingBarcodeScan = false
     @State private var showingNutritionOCR = false
     
+    // AI分析用
+    @State private var isAnalyzing = false
+    @State private var showingAnalysisResult = false
+    @State private var showingEmptyAnalysisAlert = false
+    @State private var analysisText: String = ""
+    
     // Slice 13: お気に入り食材（6個に拡張）
     var defaultFavorites: [(Food, String, Int)] {
         var favorites: [(Food, String, Int)] = []
@@ -150,16 +156,43 @@ struct FoodLogScreen: View {
                 .padding(.horizontal)
             }
             
-            // 保存ボタン
-            Button(action: {
-                saveCurrentFoods()
-            }) {
-                Text("記録を保存")
+            // 保存とAI分析ボタン
+            HStack(spacing: 12) {
+                // 保存ボタン
+                Button(action: {
+                    saveCurrentFoods()
+                }) {
+                    Text("記録を保存")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                
+                // AI分析ボタン
+                Button(action: {
+                    if !isAnalyzing {  // 分析中でない場合のみ実行
+                        analyzeWithAI()
+                    }
+                }) {
+                    HStack {
+                        if isAnalyzing {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "brain")
+                        }
+                        Text(isAnalyzing ? "分析中..." : "AI分析")
+                    }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.green)
+                    .background(isAnalyzing ? Color.gray : Color.purple)
                     .foregroundColor(.white)
                     .cornerRadius(10)
+                }
+                .disabled(isAnalyzing)  // 分析中はボタンを無効化
             }
             .padding(.horizontal)
             .padding(.bottom)
@@ -326,6 +359,14 @@ struct FoodLogScreen: View {
             NutritionOCRView()
                 .environmentObject(foodStore)
                 .environmentObject(foodEntryStore)
+        }
+        .sheet(isPresented: $showingAnalysisResult) {
+            AnalysisResultView(analysisText: analysisText)
+        }
+        .alert("分析対象がありません", isPresented: $showingEmptyAnalysisAlert) {
+            Button("OK") { }
+        } message: {
+            Text("食材を選択してからAI分析を実行してください")
         }
     }
     
@@ -748,6 +789,76 @@ struct FoodLogScreen: View {
         }
         
         addedItemsCount += 1
+    }
+    
+    // AI分析実行
+    private func analyzeWithAI() {
+        // 食材がない場合はアラート表示
+        if foods.isEmpty {
+            showingEmptyAnalysisAlert = true
+            return
+        }
+        
+        isAnalyzing = true
+        
+        // 現在の食材リストからFoodEntryを作成
+        var foodsToAnalyze: [Food] = []
+        for food in foods {
+            let multiplier = calculateMultiplier(food: food.0, quantity: food.1)
+            let analyzableFood = Food(
+                name: food.0.name + " " + food.1,
+                protein: food.0.protein * multiplier,
+                fat: food.0.fat * multiplier,
+                carbs: food.0.carbs * multiplier,
+                calories: Double(food.2)
+            )
+            foodsToAnalyze.append(analyzableFood)
+        }
+        
+        // まず古いデータをクリア
+        APIService.shared.clearTodayData { clearResult in
+            switch clearResult {
+            case .success:
+                print("古いデータをクリアしました")
+                
+                // Railsサーバーに新しいデータを送信
+                let group = DispatchGroup()
+                var hasError = false
+                
+                for food in foodsToAnalyze {
+                    group.enter()
+                    APIService.shared.sendFoodEntry(food: food) { result in
+                        if case .failure = result {
+                            hasError = true
+                        }
+                        group.leave()
+                    }
+                }
+                
+                // 全ての送信完了後にAI分析実行
+                group.notify(queue: .main) {
+                    if !hasError {
+                        APIService.shared.getAIAnalysis { result in
+                            isAnalyzing = false
+                            switch result {
+                            case .success(let analysis):
+                                self.analysisText = analysis
+                                showingAnalysisResult = true
+                            case .failure(let error):
+                                print("AI分析エラー: \(error.localizedDescription)")
+                            }
+                        }
+                    } else {
+                        isAnalyzing = false
+                        print("データ送信でエラーが発生しました")
+                    }
+                }
+                
+            case .failure(let error):
+                isAnalyzing = false
+                print("データクリアエラー: \(error.localizedDescription)")
+            }
+        }
     }
 }
 

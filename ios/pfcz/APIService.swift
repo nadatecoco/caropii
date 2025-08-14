@@ -56,6 +56,37 @@ class APIService {
         }.resume()
     }
     
+    // 今日のデータをクリア
+    func clearTodayData(completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/food_entries/clear_today") else {
+            completion(.failure(APIError.invalidURL))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("Clear today data - Status Code: \(httpResponse.statusCode)")
+                    if httpResponse.statusCode == 200 || httpResponse.statusCode == 204 {
+                        completion(.success(()))
+                    } else {
+                        completion(.failure(APIError.serverError))
+                    }
+                } else {
+                    completion(.failure(APIError.invalidResponse))
+                }
+            }
+        }.resume()
+    }
+    
     // AI分析結果を取得
     func getAIAnalysis(completion: @escaping (Result<String, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/food_entries/analyze_nutrition") else {
@@ -80,6 +111,11 @@ class APIService {
                 }
                 
                 do {
+                    // デバッグ: レスポンスを確認
+                    if let responseString = String(data: data, encoding: .utf8) {
+                        print("AI分析レスポンス: \(responseString)")
+                    }
+                    
                     if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                        let analysis = json["analysis"] as? String {
                         completion(.success(analysis))
