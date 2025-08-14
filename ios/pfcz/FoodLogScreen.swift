@@ -21,6 +21,14 @@ struct FoodLogScreen: View {
     @State private var usageCount: [String: Int] = [:]
     @State private var sortedFavorites: [(String, String, Int)] = []
     
+    // 食材検索シート表示用
+    @State private var showingSearchSheet = false
+    @State private var addedItemsCount = 0
+    
+    // OCR/バーコード表示用
+    @State private var showingBarcodeScan = false
+    @State private var showingNutritionOCR = false
+    
     // Slice 13: お気に入り食材（6個に拡張）
     let defaultFavorites = [
         ("卵", "1個", 76),
@@ -157,6 +165,29 @@ struct FoodLogScreen: View {
                 
                 // 下部固定エリア（お気に入りと保存ボタン）
                 VStack(spacing: 12) {
+                    // その他の食材を追加ボタン
+                    Button(action: {
+                        showingSearchSheet = true
+                    }) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 20))
+                            Text("その他の食材を追加")
+                                .font(.body)
+                                .fontWeight(.medium)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(Color.blue.opacity(0.1))
+                        .foregroundColor(.blue)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+                    .padding(.horizontal)
+                    
                     // お気に入り（下部に配置）
                     VStack(alignment: .leading, spacing: 8) {
                         Text("お気に入り")
@@ -211,6 +242,25 @@ struct FoodLogScreen: View {
             .navigationTitle("今日の食事")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button(action: {
+                            showingBarcodeScan = true
+                        }) {
+                            Label("バーコードスキャン", systemImage: "barcode.viewfinder")
+                        }
+                        
+                        Button(action: {
+                            showingNutritionOCR = true
+                        }) {
+                            Label("栄養成分を撮影", systemImage: "camera.fill")
+                        }
+                    } label: {
+                        Image(systemName: "camera")
+                            .font(.body)
+                    }
+                }
+                
                 ToolbarItemGroup(placement: .keyboard) {
                     if let index = editingIndex {
                         let food = foods[index]
@@ -242,6 +292,29 @@ struct FoodLogScreen: View {
         .onAppear {
             loadUsageCount()
             sortFavoritesByUsage()
+        }
+        .sheet(isPresented: $showingSearchSheet) {
+            SearchSheet(
+                foodStore: foodStore,
+                onAdd: { food, quantity in
+                    addFoodFromSearch(food, quantity: quantity)
+                },
+                addedCount: $addedItemsCount,
+                currentFoods: $foods
+            )
+            .onDisappear {
+                addedItemsCount = 0
+            }
+        }
+        .sheet(isPresented: $showingBarcodeScan) {
+            BarcodeScannerView()
+                .environmentObject(foodStore)
+                .environmentObject(foodEntryStore)
+        }
+        .sheet(isPresented: $showingNutritionOCR) {
+            NutritionOCRView()
+                .environmentObject(foodStore)
+                .environmentObject(foodEntryStore)
         }
     }
     
@@ -593,6 +666,27 @@ struct FoodLogScreen: View {
             let secondCount = usageCount[second.0] ?? 0
             return firstCount > secondCount
         }
+    }
+    
+    // 検索から食材追加
+    private func addFoodFromSearch(_ food: Food, quantity: Int) {
+        let foodTuple = (food.name, "\(quantity)g", Int(food.calories))
+        
+        if let index = foods.firstIndex(where: { $0.0 == food.name }) {
+            // 既存の食材に加算
+            let current = foods[index]
+            let currentValue = Int(current.1.replacingOccurrences(of: "g", with: "")
+                .replacingOccurrences(of: "個", with: "")
+                .replacingOccurrences(of: "ml", with: "")
+                .replacingOccurrences(of: "パック", with: "")) ?? 0
+            let newValue = currentValue + quantity
+            foods[index] = (food.name, "\(newValue)g", Int(food.calories * Double(newValue) / Double(quantity)))
+        } else {
+            // 新規追加
+            foods.append(foodTuple)
+        }
+        
+        addedItemsCount += 1
     }
 }
 
