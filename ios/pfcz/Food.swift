@@ -1,6 +1,6 @@
 import Foundation
 
-struct Food: Identifiable, Codable, Hashable {
+struct Food: Identifiable, Codable {
     let id: UUID
     let name: String
     let protein: Double
