@@ -815,48 +815,36 @@ struct FoodLogScreen: View {
             foodsToAnalyze.append(analyzableFood)
         }
         
-        // まず古いデータをクリア
-        APIService.shared.clearTodayData { clearResult in
-            switch clearResult {
-            case .success:
-                print("古いデータをクリアしました")
-                
-                // Railsサーバーに新しいデータを送信
-                let group = DispatchGroup()
-                var hasError = false
-                
-                for food in foodsToAnalyze {
-                    group.enter()
-                    APIService.shared.sendFoodEntry(food: food) { result in
-                        if case .failure = result {
-                            hasError = true
-                        }
-                        group.leave()
+        // Railsサーバーに新しいデータを送信
+        let group = DispatchGroup()
+        var hasError = false
+        
+        for food in foodsToAnalyze {
+            group.enter()
+            APIService.shared.sendFoodEntry(food: food) { result in
+                if case .failure = result {
+                    hasError = true
+                }
+                group.leave()
+            }
+        }
+        
+        // 全ての送信完了後にAI分析実行
+        group.notify(queue: .main) {
+            if !hasError {
+                APIService.shared.getAIAnalysis { result in
+                    isAnalyzing = false
+                    switch result {
+                    case .success(let analysis):
+                        self.analysisText = analysis
+                        showingAnalysisResult = true
+                    case .failure(let error):
+                        print("AI分析エラー: \(error.localizedDescription)")
                     }
                 }
-                
-                // 全ての送信完了後にAI分析実行
-                group.notify(queue: .main) {
-                    if !hasError {
-                        APIService.shared.getAIAnalysis { result in
-                            isAnalyzing = false
-                            switch result {
-                            case .success(let analysis):
-                                self.analysisText = analysis
-                                showingAnalysisResult = true
-                            case .failure(let error):
-                                print("AI分析エラー: \(error.localizedDescription)")
-                            }
-                        }
-                    } else {
-                        isAnalyzing = false
-                        print("データ送信でエラーが発生しました")
-                    }
-                }
-                
-            case .failure(let error):
+            } else {
                 isAnalyzing = false
-                print("データクリアエラー: \(error.localizedDescription)")
+                print("データ送信でエラーが発生しました")
             }
         }
     }
