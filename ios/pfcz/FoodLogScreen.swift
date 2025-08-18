@@ -5,8 +5,8 @@ struct FoodLogScreen: View {
     @EnvironmentObject var foodStore: FoodStore
     @EnvironmentObject var foodEntryStore: FoodEntryStore
     
-    // @Stateで削除可能なリストに変更
-    @State private var foods: [(String, String, Int)] = []
+    // @Stateで削除可能なリストに変更（Food型で栄養データも保持）
+    @State private var foods: [(Food, String, Int)] = []  // (Food型, 量表示, 総カロリー)
     
     @State private var showingSaveAlert = false
     
@@ -19,7 +19,7 @@ struct FoodLogScreen: View {
     // Slice 14: 使用頻度管理
     @AppStorage("foodUsageCount") private var usageCountData: Data = Data()
     @State private var usageCount: [String: Int] = [:]
-    @State private var sortedFavorites: [(String, String, Int)] = []
+    @State private var sortedFavorites: [(Food, String, Int)] = []
     
     // 食材検索シート表示用
     @State private var showingSearchSheet = false
@@ -36,17 +36,34 @@ struct FoodLogScreen: View {
     @State private var analysisText: String = ""
     
     // Slice 13: お気に入り食材（6個に拡張）
-    let defaultFavorites = [
-        ("卵", "1個", 76),
-        ("鶏胸肉", "100g", 108),
-        ("白米", "150g", 252),
-        ("納豆", "1パック", 100),
-        ("牛乳", "200ml", 134),
-        ("サラダチキン", "125g", 135)
-    ]
+    var defaultFavorites: [(Food, String, Int)] {
+        var favorites: [(Food, String, Int)] = []
+        
+        // FoodStoreから個別に取得（見つからない食材はスキップ）
+        if let egg = foodStore.foods.first(where: { $0.name == "卵" }) {
+            favorites.append((egg, "1個", Int(egg.calories * 0.5)))  // 1個=50g
+        }
+        if let chickenBreast = foodStore.foods.first(where: { $0.name == "鶏胸肉" }) {
+            favorites.append((chickenBreast, "100g", Int(chickenBreast.calories)))  // 100g
+        }
+        if let rice = foodStore.foods.first(where: { $0.name == "白米" }) {
+            favorites.append((rice, "150g", Int(rice.calories * 1.5)))  // 150g
+        }
+        if let natto = foodStore.foods.first(where: { $0.name == "納豆" }) {
+            favorites.append((natto, "1パック", Int(natto.calories * 0.5)))  // 1パック=50g
+        }
+        if let milk = foodStore.foods.first(where: { $0.name == "牛乳" }) {
+            favorites.append((milk, "200ml", Int(milk.calories * 2.0)))  // 200ml
+        }
+        if let saladChicken = foodStore.foods.first(where: { $0.name == "サラダチキン" }) {
+            favorites.append((saladChicken, "125g", Int(saladChicken.calories * 1.25)))  // 125g
+        }
+        
+        return favorites
+    }
     
     // Slice 14: お気に入りの参照（画面中は固定）
-    var favorites: [(String, String, Int)] {
+    var favorites: [(Food, String, Int)] {
         sortedFavorites.isEmpty ? defaultFavorites : sortedFavorites
     }
     
@@ -55,46 +72,28 @@ struct FoodLogScreen: View {
         foods.reduce(0) { $0 + $1.2 }
     }
     
-    // PFC計算（仮の値）
-    var totalProtein: Int {
-        // 簡易計算: カロリーの20%をタンパク質とする
-        foods.reduce(0) { total, food in
-            if food.0 == "卵" {
-                return total + 6 * (Int(food.1.replacingOccurrences(of: "個", with: "")) ?? 0)
-            } else if food.0 == "鶏胸肉" || food.0 == "サラダチキン" {
-                return total + (Int(food.1.replacingOccurrences(of: "g", with: "")) ?? 0) / 4
-            } else if food.0 == "納豆" {
-                return total + 8 * (Int(food.1.replacingOccurrences(of: "パック", with: "")) ?? 0)
-            }
-            return total + 2
+    // PFC計算（FoodStoreの正確なデータを使用）
+    var totalProtein: Double {
+        foods.reduce(0.0) { total, item in
+            let multiplier = calculateMultiplier(food: item.0, quantity: item.1)
+            return total + (item.0.protein * multiplier)
         }
     }
     
-    var totalFat: Int {
-        // 簡易計算
-        foods.reduce(0) { total, food in
-            if food.0 == "卵" {
-                return total + 5 * (Int(food.1.replacingOccurrences(of: "個", with: "")) ?? 0)
-            } else if food.0 == "牛乳" {
-                return total + (Int(food.1.replacingOccurrences(of: "ml", with: "")) ?? 0) / 25
-            }
-            return total + 3
+    var totalFat: Double {
+        foods.reduce(0.0) { total, item in
+            let multiplier = calculateMultiplier(food: item.0, quantity: item.1)
+            return total + (item.0.fat * multiplier)
         }
     }
     
-    var totalCarbs: Int {
-        // 簡易計算
-        foods.reduce(0) { total, food in
-            if food.0 == "白米" {
-                return total + (Int(food.1.replacingOccurrences(of: "g", with: "")) ?? 0) * 37 / 100
-            } else if food.0 == "牛乳" {
-                return total + (Int(food.1.replacingOccurrences(of: "ml", with: "")) ?? 0) / 20
-            }
-            return total + 5
+    var totalCarbs: Double {
+        foods.reduce(0.0) { total, item in
+            let multiplier = calculateMultiplier(food: item.0, quantity: item.1)
+            return total + (item.0.carbs * multiplier)
         }
     }
     
-<<<<<<< HEAD
     // 下部のお気に入りと保存ボタン
     @ViewBuilder
     private var bottomView: some View {
@@ -247,57 +246,15 @@ struct FoodLogScreen: View {
         .padding(.bottom, 8)
     }
     
-=======
->>>>>>> parent of 6df7065 (栄養データ計算修正)
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
                 // 上部固定エリア
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("食事記録")
-                        .font(.title)
-                        .padding(.horizontal)
-                    
-                    // Slice 4: 合計カロリー表示（PFC付き）
-                    HStack {
-                        Text("合計")
-                            .font(.headline)
-                        
-                        Spacer()
-                        
-                        // PFC数値を1行で表示
-                        HStack(spacing: 12) {
-                            Text("P:\(totalProtein)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("F:\(totalFat)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text("C:\(totalCarbs)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Text("\(totalCalories) kcal")
-                            .font(.headline)
-                            .foregroundColor(.blue)
-                    }
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(10)
-                    .padding(.horizontal)
-                    
-                    // 操作ヒント
-                    Text("タップで追加 ／ 左スワイプで減らす ／ 右スワイプで削除")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
-                }
-                .padding(.bottom, 8)
+                headerView
                 
                 // スワイプ削除可能なリスト（中央エリア）
                 List {
-                    ForEach(Array(foods.enumerated()), id: \.element.0) { index, food in
+                    ForEach(Array(foods.enumerated()), id: \.element.0.id) { index, food in
                         foodRow(index: index, food: food)
                         .contentShape(Rectangle())
                         .onTapGesture {
@@ -325,123 +282,49 @@ struct FoodLogScreen: View {
                 .listStyle(PlainListStyle())
                 
                 // 下部固定エリア（お気に入りと保存ボタン）
-                VStack(spacing: 12) {
-                    // その他の食材を追加ボタン
-                    Button(action: {
-                        showingSearchSheet = true
-                    }) {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 20))
-                            Text("その他の食材を追加")
-                                .font(.body)
-                                .fontWeight(.medium)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(Color.blue.opacity(0.1))
-                        .foregroundColor(.blue)
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                        )
-                    }
-                    .padding(.horizontal)
-                    
-                    // お気に入り（下部に配置）
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("お気に入り")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
-                        
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            ForEach(favorites, id: \.0) { favorite in
-                                Button(action: {
-                                    addFavorite(favorite)
-                                }) {
-                                    VStack(spacing: 4) {
-                                        Text(favorite.0)
-                                            .font(.body)
-                                            .fontWeight(.medium)
-                                        Text(favorite.1)
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
-                                    .background(Color.blue.opacity(0.1))
-                                    .cornerRadius(10)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                                    )
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                    
-                    // 保存ボタン
-                    Button(action: {
-                        saveCurrentFoods()
-                    }) {
-                        Text("記録を保存")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom)
-                }
-                .background(Color(UIColor.systemBackground))
+                bottomView
             }
             .navigationTitle("今日の食事")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(action: {
-                            showingBarcodeScan = true
-                        }) {
-                            Label("バーコードスキャン", systemImage: "barcode.viewfinder")
-                        }
-                        
-                        Button(action: {
-                            showingNutritionOCR = true
-                        }) {
-                            Label("栄養成分を撮影", systemImage: "camera.fill")
-                        }
-                    } label: {
-                        Image(systemName: "camera")
-                            .font(.body)
+            .navigationBarItems(
+                trailing: Menu {
+                    Button(action: {
+                        showingBarcodeScan = true
+                    }) {
+                        Label("バーコードスキャン", systemImage: "barcode.viewfinder")
                     }
+                    
+                    Button(action: {
+                        showingNutritionOCR = true
+                    }) {
+                        Label("栄養成分を撮影", systemImage: "camera.fill")
+                    }
+                } label: {
+                    Image(systemName: "camera")
+                        .font(.body)
                 }
-                
-                ToolbarItemGroup(placement: .keyboard) {
-                    if let index = editingIndex {
-                        let food = foods[index]
-                        if food.0 == "卵" {
-                            Button("-1") { adjustValue(-1) }
-                            Button("+1") { adjustValue(1) }
-                        } else {
-                            Button("-50") { adjustValue(-50) }
-                            Button("-10") { adjustValue(-10) }
-                            Button("+10") { adjustValue(10) }
-                            Button("+50") { adjustValue(50) }
-                        }
-                        
-                        Spacer()
-                        
-                        Button("完了") {
-                            finishEditing()
-                        }
-                        .fontWeight(.semibold)
+            )
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                if let index = editingIndex {
+                    let food = foods[index]
+                    if food.0.name == "卵" {
+                        Button("-1") { adjustValue(-1) }
+                        Button("+1") { adjustValue(1) }
+                    } else {
+                        Button("-50") { adjustValue(-50) }
+                        Button("-10") { adjustValue(-10) }
+                        Button("+10") { adjustValue(10) }
+                        Button("+50") { adjustValue(50) }
                     }
+                    
+                    Spacer()
+                    
+                    Button("完了") {
+                        finishEditing()
+                    }
+                    .fontWeight(.semibold)
                 }
             }
         }
@@ -455,13 +338,19 @@ struct FoodLogScreen: View {
             sortFavoritesByUsage()
         }
         .sheet(isPresented: $showingSearchSheet) {
+            // foodsを(String, String, Int)型に変換
+            let simpleFoods = Binding<[(String, String, Int)]>(
+                get: { foods.map { ($0.0.name, $0.1, $0.2) } },
+                set: { _ in }  // 読み取り専用
+            )
+            
             SearchSheet(
                 foodStore: foodStore,
                 onAdd: { food, quantity in
                     addFoodFromSearch(food, quantity: quantity)
                 },
                 addedCount: $addedItemsCount,
-                currentFoods: $foods
+                currentFoods: simpleFoods
             )
             .onDisappear {
                 addedItemsCount = 0
@@ -488,33 +377,54 @@ struct FoodLogScreen: View {
     }
     
     // お気に入り追加処理
-    private func addFavorite(_ favorite: (String, String, Int)) {
-        if let index = foods.firstIndex(where: { $0.0 == favorite.0 }) {
+    private func addFavorite(_ favorite: (Food, String, Int)) {
+        if let index = foods.firstIndex(where: { $0.0.name == favorite.0.name }) {
             let current = foods[index]
-            let newFood: (String, String, Int)
+            let newFood: (Food, String, Int)
             
-            if favorite.0 == "卵" {
+            if favorite.0.name == "卵" {
                 let currentCount = Int(current.1.replacingOccurrences(of: "個", with: "")) ?? 1
-                newFood = (current.0, "\(currentCount + 1)個", current.2 + favorite.2)
-            } else if favorite.0 == "納豆" {
+                let newCount = currentCount + 1
+                let newCalories = Int(favorite.0.calories * Double(newCount) * 0.5)  // 1個=50g
+                newFood = (favorite.0, "\(newCount)個", newCalories)
+            } else if favorite.0.name == "納豆" {
                 let currentPacks = Int(current.1.replacingOccurrences(of: "パック", with: "")) ?? 1
-                newFood = (current.0, "\(currentPacks + 1)パック", current.2 + favorite.2)
-            } else if favorite.0 == "牛乳" {
+                let newPacks = currentPacks + 1
+                let newCalories = Int(favorite.0.calories * Double(newPacks) * 0.5)  // 1パック=50g
+                newFood = (favorite.0, "\(newPacks)パック", newCalories)
+            } else if favorite.0.name == "牛乳" {
                 let currentMl = Int(current.1.replacingOccurrences(of: "ml", with: "")) ?? 0
                 let additionalMl = Int(favorite.1.replacingOccurrences(of: "ml", with: "")) ?? 0
-                newFood = (current.0, "\(currentMl + additionalMl)ml", current.2 + favorite.2)
+                let newMl = currentMl + additionalMl
+                let newCalories = Int(favorite.0.calories * Double(newMl) / 100.0)  // ml→100mlあたり
+                newFood = (favorite.0, "\(newMl)ml", newCalories)
             } else {
                 let currentGram = Int(current.1.replacingOccurrences(of: "g", with: "")) ?? 0
                 let additionalGram = Int(favorite.1.replacingOccurrences(of: "g", with: "")) ?? 0
-                newFood = (current.0, "\(currentGram + additionalGram)g", current.2 + favorite.2)
+                let newGram = currentGram + additionalGram
+                let newCalories = Int(favorite.0.calories * Double(newGram) / 100.0)  // g→100gあたり
+                newFood = (favorite.0, "\(newGram)g", newCalories)
             }
             
             foods[index] = newFood
         } else {
-            foods.append(favorite)
+            // 新規追加時もFoodオブジェクトのカロリーを正しく計算
+            let newCalories: Int
+            if favorite.0.name == "卵" {
+                newCalories = Int(favorite.0.calories * 0.5)  // 1個=50g
+            } else if favorite.0.name == "納豆" {
+                newCalories = Int(favorite.0.calories * 0.5)  // 1パック=50g
+            } else if favorite.0.name == "牛乳" {
+                let ml = Int(favorite.1.replacingOccurrences(of: "ml", with: "")) ?? 200
+                newCalories = Int(favorite.0.calories * Double(ml) / 100.0)  // ml→100mlあたり
+            } else {
+                let gram = Int(favorite.1.replacingOccurrences(of: "g", with: "")) ?? 100
+                newCalories = Int(favorite.0.calories * Double(gram) / 100.0)  // g→100gあたり
+            }
+            foods.append((favorite.0, favorite.1, newCalories))
         }
         
-        usageCount[favorite.0] = (usageCount[favorite.0] ?? 0) + 1
+        usageCount[favorite.0.name] = (usageCount[favorite.0.name] ?? 0) + 1
         saveUsageCount()
     }
     
@@ -523,25 +433,29 @@ struct FoodLogScreen: View {
         guard index < foods.count else { return }
         let current = foods[index]
         
-        if current.0 == "卵" {
+        if current.0.name == "卵" {
             let currentCount = Int(current.1.replacingOccurrences(of: "個", with: "")) ?? 1
             if currentCount > 1 {
-                foods[index] = (current.0, "\(currentCount - 1)個", current.2 - 76)
+                let newCount = currentCount - 1
+                let newCalories = Int(current.0.calories * Double(newCount) * 0.5)  // 1個=50g
+                foods[index] = (current.0, "\(newCount)個", newCalories)
             } else {
                 foods.remove(at: index)
             }
-        } else if current.0 == "納豆" {
+        } else if current.0.name == "納豆" {
             let currentPacks = Int(current.1.replacingOccurrences(of: "パック", with: "")) ?? 1
             if currentPacks > 1 {
-                foods[index] = (current.0, "\(currentPacks - 1)パック", current.2 - 100)
+                let newPacks = currentPacks - 1
+                let newCalories = Int(current.0.calories * Double(newPacks) * 0.5)  // 1パック=50g
+                foods[index] = (current.0, "\(newPacks)パック", newCalories)
             } else {
                 foods.remove(at: index)
             }
-        } else if current.0 == "牛乳" {
+        } else if current.0.name == "牛乳" {
             let currentMl = Int(current.1.replacingOccurrences(of: "ml", with: "")) ?? 0
             if currentMl > 200 {
                 let newMl = currentMl - 200
-                let newCalories = Int(Double(newMl) * 0.67)
+                let newCalories = Int(current.0.calories * Double(newMl) / 100.0)  // ml→100mlあたり
                 foods[index] = (current.0, "\(newMl)ml", newCalories)
             } else {
                 foods.remove(at: index)
@@ -549,23 +463,17 @@ struct FoodLogScreen: View {
         } else {
             let currentGram = Int(current.1.replacingOccurrences(of: "g", with: "")) ?? 0
             let decrementGram: Int
-            let caloriesPerGram: Double
             
-            switch current.0 {
-            case "鶏胸肉":
+            switch current.0.name {
+            case "鶏胸肉", "サラダチキン":
                 decrementGram = 100
-                caloriesPerGram = 1.08
-            case "サラダチキン":
-                decrementGram = 125
-                caloriesPerGram = 1.08
             default:
                 decrementGram = 150
-                caloriesPerGram = 1.68
             }
             
             if currentGram > decrementGram {
                 let newGram = currentGram - decrementGram
-                let newCalories = Int(Double(newGram) * caloriesPerGram)
+                let newCalories = Int(current.0.calories * Double(newGram) / 100.0)  // g→100gあたり
                 foods[index] = (current.0, "\(newGram)g", newCalories)
             } else {
                 foods.remove(at: index)
@@ -579,11 +487,14 @@ struct FoodLogScreen: View {
     // 保存処理
     private func saveCurrentFoods() {
         for food in foods {
+            // 量に応じた倍率を計算
+            let multiplier = calculateMultiplier(food: food.0, quantity: food.1)
+            
             let newFood = Food(
-                name: food.0,
-                protein: 10.0,
-                fat: 5.0,
-                carbs: 20.0,
+                name: food.0.name + " " + food.1,  // 例: "卵 2個"
+                protein: food.0.protein * multiplier,
+                fat: food.0.fat * multiplier,
+                carbs: food.0.carbs * multiplier,
                 calories: Double(food.2)
             )
             foodEntryStore.add(food: newFood)
@@ -605,11 +516,11 @@ struct FoodLogScreen: View {
         editingIndex = index
         previousEditingIndex = index
         
-        if food.0 == "卵" {
+        if food.0.name == "卵" {
             editingValue = food.1.replacingOccurrences(of: "個", with: "")
-        } else if food.0 == "納豆" {
+        } else if food.0.name == "納豆" {
             editingValue = food.1.replacingOccurrences(of: "パック", with: "")
-        } else if food.0 == "牛乳" {
+        } else if food.0.name == "牛乳" {
             editingValue = food.1.replacingOccurrences(of: "ml", with: "")
         } else {
             editingValue = food.1.replacingOccurrences(of: "g", with: "")
@@ -630,19 +541,22 @@ struct FoodLogScreen: View {
         
         if let value = Int(editingValue), value > 0 {
             let food = foods[index]
-            if food.0 == "卵" {
+            if food.0.name == "卵" {
                 let validValue = min(value, 99)
-                foods[index] = (food.0, "\(validValue)個", validValue * 76)
-            } else if food.0 == "納豆" {
+                let newCalories = Int(food.0.calories * Double(validValue) * 0.5)  // 1個=50g
+                foods[index] = (food.0, "\(validValue)個", newCalories)
+            } else if food.0.name == "納豆" {
                 let validValue = min(value, 10)
-                foods[index] = (food.0, "\(validValue)パック", validValue * 100)
-            } else if food.0 == "牛乳" {
+                let newCalories = Int(food.0.calories * Double(validValue) * 0.5)  // 1パック=50g
+                foods[index] = (food.0, "\(validValue)パック", newCalories)
+            } else if food.0.name == "牛乳" {
                 let validValue = min(value, 2000)
-                foods[index] = (food.0, "\(validValue)ml", Int(Double(validValue) * 0.67))
+                let newCalories = Int(food.0.calories * Double(validValue) / 100.0)  // ml→100mlあたり
+                foods[index] = (food.0, "\(validValue)ml", newCalories)
             } else {
                 let validValue = min(value, 9999)
                 let caloriesPerGram: Double
-                switch food.0 {
+                switch food.0.name {
                 case "鶏胸肉", "サラダチキン":
                     caloriesPerGram = 1.08
                 default:
@@ -652,11 +566,11 @@ struct FoodLogScreen: View {
             }
         } else if editingValue.isEmpty || editingValue == "0" {
             let food = foods[index]
-            if food.0 == "卵" {
+            if food.0.name == "卵" {
                 editingValue = food.1.replacingOccurrences(of: "個", with: "")
-            } else if food.0 == "納豆" {
+            } else if food.0.name == "納豆" {
                 editingValue = food.1.replacingOccurrences(of: "パック", with: "")
-            } else if food.0 == "牛乳" {
+            } else if food.0.name == "牛乳" {
                 editingValue = food.1.replacingOccurrences(of: "ml", with: "")
             } else {
                 editingValue = food.1.replacingOccurrences(of: "g", with: "")
@@ -681,6 +595,29 @@ struct FoodLogScreen: View {
         editingValue = String(newValue)
     }
     
+    // 量から倍率を計算（100gあたりの栄養価に対する倍率）
+    private func calculateMultiplier(food: Food, quantity: String) -> Double {
+        // 単位を除去して数値を取得
+        let numericString = quantity.replacingOccurrences(of: "個", with: "")
+            .replacingOccurrences(of: "パック", with: "")
+            .replacingOccurrences(of: "ml", with: "")
+            .replacingOccurrences(of: "g", with: "")
+        
+        guard let value = Double(numericString) else { return 1.0 }
+        
+        // 食材に応じた基準量に対する倍率を返す
+        switch food.name {
+        case "卵":
+            return value * 0.5  // 1個 = 50g
+        case "納豆":
+            return value * 0.5  // 1パック = 50g  
+        case "牛乳":
+            return value / 100.0  // ml → 100mlあたり
+        default:
+            return value / 100.0  // g → 100gあたり
+        }
+    }
+    
     // 食材に応じた単位を返す
     private func unitForFood(_ foodName: String) -> String {
         switch foodName {
@@ -697,9 +634,9 @@ struct FoodLogScreen: View {
     
     // 行のビューを分離
     @ViewBuilder
-    private func foodRow(index: Int, food: (String, String, Int)) -> some View {
+    private func foodRow(index: Int, food: (Food, String, Int)) -> some View {
         HStack {
-            Text(food.0)
+            Text(food.0.name)
                 .font(.body)
             
             // クイック調整ボタン
@@ -759,7 +696,7 @@ struct FoodLogScreen: View {
                             finishEditing()
                         }
                     
-                    Text(unitForFood(food.0))
+                    Text(unitForFood(food.0.name))
                         .foregroundColor(.secondary)
                 }
             }
@@ -797,19 +734,18 @@ struct FoodLogScreen: View {
         var newAmount: String
         var newCalories: Int
         
-        if current.0 == "卵" {
+        if current.0.name == "卵" {
             newAmount = "\(newValue)個"
-            newCalories = newValue * 76
-        } else if current.0 == "納豆" {
+            newCalories = Int(current.0.calories * Double(newValue) * 0.5)  // 1個=50g
+        } else if current.0.name == "納豆" {
             newAmount = "\(newValue)パック"
-            newCalories = newValue * 100
-        } else if current.0 == "牛乳" {
+            newCalories = Int(current.0.calories * Double(newValue) * 0.5)  // 1パック=50g
+        } else if current.0.name == "牛乳" {
             newAmount = "\(newValue)ml"
-            newCalories = Int(Double(newValue) * 0.67)
+            newCalories = Int(current.0.calories * Double(newValue) / 100.0)  // ml→100mlあたり
         } else {
             newAmount = "\(newValue)g"
-            let caloriesPerGram: Double = (current.0 == "鶏胸肉" || current.0 == "サラダチキン") ? 1.08 : 1.68
-            newCalories = Int(Double(newValue) * caloriesPerGram)
+            newCalories = Int(current.0.calories * Double(newValue) / 100.0)  // g→100gあたり
         }
         
         foods[index] = (current.0, newAmount, newCalories)
@@ -831,17 +767,19 @@ struct FoodLogScreen: View {
     // 画面表示時にソート
     private func sortFavoritesByUsage() {
         sortedFavorites = defaultFavorites.sorted { first, second in
-            let firstCount = usageCount[first.0] ?? 0
-            let secondCount = usageCount[second.0] ?? 0
+            let firstCount = usageCount[first.0.name] ?? 0
+            let secondCount = usageCount[second.0.name] ?? 0
             return firstCount > secondCount
         }
     }
     
     // 検索から食材追加
     private func addFoodFromSearch(_ food: Food, quantity: Int) {
-        let foodTuple = (food.name, "\(quantity)g", Int(food.calories))
+        let multiplier = Double(quantity) / 100.0  // 100gあたりの倍率
+        let totalCalories = Int(food.calories * multiplier)
+        let foodTuple = (food, "\(quantity)g", totalCalories)
         
-        if let index = foods.firstIndex(where: { $0.0 == food.name }) {
+        if let index = foods.firstIndex(where: { $0.0.name == food.name }) {
             // 既存の食材に加算
             let current = foods[index]
             let currentValue = Int(current.1.replacingOccurrences(of: "g", with: "")
@@ -849,7 +787,8 @@ struct FoodLogScreen: View {
                 .replacingOccurrences(of: "ml", with: "")
                 .replacingOccurrences(of: "パック", with: "")) ?? 0
             let newValue = currentValue + quantity
-            foods[index] = (food.name, "\(newValue)g", Int(food.calories * Double(newValue) / Double(quantity)))
+            let newCalories = Int(food.calories * Double(newValue) / 100.0)
+            foods[index] = (food, "\(newValue)g", newCalories)
         } else {
             // 新規追加
             foods.append(foodTuple)

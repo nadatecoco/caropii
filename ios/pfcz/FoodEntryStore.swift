@@ -85,3 +85,4 @@ class FoodEntryStore: ObservableObject {
         todayEntries.reduce(0) { $0 + $1.food.calories }
     }
 }
+
