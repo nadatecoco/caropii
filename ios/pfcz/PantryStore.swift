@@ -10,6 +10,25 @@ class PantryStore: ObservableObject {
     
     init() {
         loadItems()
+        
+        // ダミーデータを追加（開発用）
+        if items.isEmpty {
+            addDummyData()
+        }
+    }
+    
+    // 開発用のダミーデータ
+    private func addDummyData() {
+        items = [
+            PantryItem(name: "人参", unit: "g", quantity: 200),
+            PantryItem(name: "じゃがいも", unit: "g", quantity: 300),
+            PantryItem(name: "玉ねぎ", unit: "個", quantity: 2),
+            PantryItem(name: "豚肉", unit: "g", quantity: 400),
+            PantryItem(name: "カレールー", unit: "箱", quantity: 1),
+            PantryItem(name: "白米", unit: "g", quantity: 500),
+            PantryItem(name: "卵", unit: "個", quantity: 6)
+        ]
+        saveItems()
     }
     
     // MARK: - データ永続化

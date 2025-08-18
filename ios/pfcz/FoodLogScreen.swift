@@ -29,6 +29,9 @@ struct FoodLogScreen: View {
     @State private var showingBarcodeScan = false
     @State private var showingNutritionOCR = false
     
+    // 料理作成画面表示用
+    @State private var showingDishCreation = false
+    
     // AI分析用
     @State private var isAnalyzing = false
     @State private var showingAnalysisResult = false
@@ -98,26 +101,51 @@ struct FoodLogScreen: View {
     @ViewBuilder
     private var bottomView: some View {
         VStack(spacing: 12) {
-            // その他の食材を追加ボタン
-            Button(action: {
-                showingSearchSheet = true
-            }) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 20))
-                    Text("その他の食材を追加")
-                        .font(.body)
-                        .fontWeight(.medium)
+            // ボタンを横並びに配置
+            HStack(spacing: 12) {
+                // その他の食材を追加ボタン
+                Button(action: {
+                    showingSearchSheet = true
+                }) {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 20))
+                        Text("食材を追加")
+                            .font(.body)
+                            .fontWeight(.medium)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(Color.blue.opacity(0.1))
+                    .foregroundColor(.blue)
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                    )
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(Color.blue.opacity(0.1))
-                .foregroundColor(.blue)
-                .cornerRadius(10)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                )
+                
+                // 料理を作るボタン
+                Button(action: {
+                    showingDishCreation = true
+                }) {
+                    HStack {
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 20))
+                        Text("料理を作る")
+                            .font(.body)
+                            .fontWeight(.medium)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(Color.orange.opacity(0.1))
+                    .foregroundColor(.orange)
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                    )
+                }
             }
             .padding(.horizontal)
             
@@ -365,6 +393,10 @@ struct FoodLogScreen: View {
             NutritionOCRView()
                 .environmentObject(foodStore)
                 .environmentObject(foodEntryStore)
+        }
+        .sheet(isPresented: $showingDishCreation) {
+            DishCreationView()
+                .environmentObject(foodStore)
         }
         .sheet(isPresented: $showingAnalysisResult) {
             AnalysisResultView(analysisText: analysisText)
