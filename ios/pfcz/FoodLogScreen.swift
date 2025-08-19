@@ -4,6 +4,7 @@ import SwiftUI
 struct FoodLogScreen: View {
     @EnvironmentObject var foodStore: FoodStore
     @EnvironmentObject var foodEntryStore: FoodEntryStore
+    @StateObject private var dishStore = DishStore()
     
     // @Stateで削除可能なリストに変更（Food型で栄養データも保持）
     @State private var foods: [(Food, String, Int)] = []  // (Food型, 量表示, 総カロリー)
@@ -149,39 +150,73 @@ struct FoodLogScreen: View {
             }
             .padding(.horizontal)
             
-            // お気に入り（下部に配置）
+            // 作った料理（お気に入りの代わり）
             VStack(alignment: .leading, spacing: 8) {
-                Text("お気に入り")
+                Text("作った料理")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.horizontal)
                 
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    ForEach(favorites, id: \.0.id) { favorite in
-                        Button(action: {
-                            addFavorite(favorite)
-                        }) {
-                            VStack(spacing: 4) {
-                                Text(favorite.0.name)
-                                    .font(.body)
-                                    .fontWeight(.medium)
-                                Text(favorite.1)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                // 作った料理があれば表示、なければお気に入りを表示
+                if !dishStore.availableDishes().isEmpty {
+                    // 作った料理を横スクロールで表示
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(dishStore.availableDishes()) { dish in
+                                Button(action: {
+                                    // 料理を追加（次のスライスで実装）
+                                    print("料理を選択: \(dish.name)")
+                                }) {
+                                    VStack(spacing: 4) {
+                                        Text(dish.name)
+                                            .font(.body)
+                                            .fontWeight(.medium)
+                                        Text("\(Int(dish.remainingWeight))g")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .frame(width: 100)
+                                    .padding(.vertical, 12)
+                                    .background(Color.orange.opacity(0.1))
+                                    .cornerRadius(10)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                                    )
+                                }
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(10)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-                            )
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .padding(.horizontal)
                     }
+                } else {
+                    // お気に入りを表示
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                        ForEach(favorites, id: \.0.id) { favorite in
+                            Button(action: {
+                                addFavorite(favorite)
+                            }) {
+                                VStack(spacing: 4) {
+                                    Text(favorite.0.name)
+                                        .font(.body)
+                                        .fontWeight(.medium)
+                                    Text(favorite.1)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(10)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
             }
             
             // 保存とAI分析ボタン
