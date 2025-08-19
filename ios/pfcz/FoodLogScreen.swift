@@ -171,7 +171,7 @@ struct FoodLogScreen: View {
                                         Text(dish.name)
                                             .font(.body)
                                             .fontWeight(.medium)
-                                        Text(残り"\(Int(dish.remainingWeight))g")
+                                        Text("残り\(Int(dish.remainingWeight))g")
                                             .font(.caption)
                                             .foregroundColor(.secondary)
                                     }
