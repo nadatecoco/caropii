@@ -30,37 +30,37 @@ struct HomeView: View {
                 NavigationLink(destination: FoodLogScreen()
                     .environmentObject(foodStore)
                     .environmentObject(foodEntryStore)) {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title2)
-                            Text("今日の記録をする")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title2)
+                        Text("今日の記録をする")
+                            .font(.headline)
+                            .fontWeight(.semibold)
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
                 
                 
                 NavigationLink(destination: DataManagementView()
                     .environmentObject(foodStore)
                     .environmentObject(foodEntryStore)) {
-                        HStack {
-                            Image(systemName: "folder.circle.fill")
-                                .font(.title2)
-                            Text("データを管理")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
+                    HStack {
+                        Image(systemName: "folder.circle.fill")
+                            .font(.title2)
+                        Text("データを管理")
+                            .font(.headline)
+                            .fontWeight(.semibold)
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
                 
                 // 睡眠データボタン（更新版）
                 NavigationLink(destination: SleepDataView()) {
@@ -138,21 +138,6 @@ struct HomeView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.purple)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                }
-                // 設定画面ボタン
-                NavigationLink(destination: SettingsView()) {
-                    HStack {
-                        Image(systemName: "gearshape.fill")
-                            .font(.title2)
-                        Text("設定")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.gray)
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
