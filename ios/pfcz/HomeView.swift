@@ -141,6 +141,7 @@ struct HomeView: View {
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
+                NavigationLink(destination: <#T##() -> View#>, label: <#T##() -> View#>)
             }
             
             Spacer()
